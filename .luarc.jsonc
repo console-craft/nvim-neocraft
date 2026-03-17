@@ -1,0 +1,43 @@
+{
+  "$schema": "https://raw.githubusercontent.com/LuaLS/vscode-lua/master/setting/schema.json",
+  "runtime": {
+    "version": "LuaJIT",
+    "path": [
+      "lua/?.lua",
+      "lua/?/init.lua"
+    ]
+  },
+  "workspace": {
+    "checkThirdParty": "Disable",
+    "library": [
+      "$VIMRUNTIME",
+      "${3rd}/luv/library"
+    ]
+  },
+  "type": {
+    "checkTableShape": true
+  },
+  "diagnostics": {
+    "globals": [
+      "vim",
+      "Lib"
+    ],
+    "groupFileStatus": {
+      "strict": "Opened",
+    },
+    "groupSeverity": {
+      "strict": "Warning",
+    },
+    "unusedLocalExclude": [
+      "_*"
+    ],
+    "disable": [
+      "missing-fields",
+      "no-unknown"
+    ]
+  },
+  "format": {
+    "enable": false // Handled by Stylua.
+  },
+}
+
