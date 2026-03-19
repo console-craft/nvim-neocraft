@@ -1,12 +1,20 @@
 local opt = vim.opt
 
 -- stylua: ignore start
--- Global settings
+
+-- ┌───────────────────────────────────────────┐
+-- │ Global Settings                           │
+-- └───────────────────────────────────────────┘
+
 vim.g.mapleader                  = ' '                              -- Use `<Space>` as <Leader> key
 vim.g.maplocalleader             = '\\'                             -- Explicitly set `\` (default) as <LocalLeader> key
 vim.g.markdown_recommended_style = 0                                -- Disable legacy markdown style defaults
+vim.g.have_nerd_font             = true                             -- Enable icons in the UI
 
--- General
+-- ┌───────────────────────────────────────────┐
+-- │ General Settings                          │
+-- └───────────────────────────────────────────┘
+
 opt.clipboard                    = vim.env.SSH_CONNECTION and '' or 'unnamedplus' -- Sync with system clipboard
 opt.mouse                        = 'a'                              -- Enable mouse
 opt.termguicolors                = true                             -- True color support
@@ -15,8 +23,14 @@ opt.undofile                     = true                             -- Enable pe
 opt.updatetime                   = 250                              -- Decrease update time
 opt.timeoutlen                   = 300                              -- Decrease mapped sequence wait time
 
--- UI
+-- ┌───────────────────────────────────────────┐
+-- │ UI                                        │
+-- └───────────────────────────────────────────┘
+
 opt.number                       = true                             -- Show line numbers
+opt.laststatus                   = 3                                -- Show a global statusline.
+opt.winbar                       = "%f"                             -- Show file path in the window bar.
+opt.shortmess:append({ W = true, I = true, c = true, C = true })    -- Suppress unnecessary messages for a cleaner UI.
 opt.relativenumber               = true                             -- Show relative line numbers
 opt.showmode                     = false                            -- Don't show mode in command line
 opt.ruler                        = false                            -- Don't show cursor position in command line
@@ -44,12 +58,18 @@ opt.pummaxwidth                  = 100                              -- Make popu
 opt.pumborder                    = 'single'                         -- Add a border to popup menus
 opt.winborder                    = 'single'                         -- Use a single border for floating windows
 
--- Windows
+-- ┌───────────────────────────────────────────┐
+-- │ Windows                                   │
+-- └───────────────────────────────────────────┘
+
 opt.splitright                   = true                             -- Open vertical splits to the right
 opt.splitbelow                   = true                             -- Open horizontal splits below
 opt.splitkeep                    = 'screen'                         -- Reduce scroll during window split
 
--- Search
+-- ┌───────────────────────────────────────────┐
+-- │ Search                                    │
+-- └───────────────────────────────────────────┘
+
 opt.ignorecase                   = true                             -- Case-insensitive searching by default
 opt.smartcase                    = true                             -- Case-sensitive searching triggered by \C or capital letters in the pattern
 opt.incsearch                    = true                             -- Show search matches while typing
@@ -58,7 +78,10 @@ opt.grepformat                   = '%f:%l:%c:%m'                    -- Parse rip
 opt.wildmode                     = 'longest:full,full'              -- Improve command-line completion
 opt.iskeyword:append('-')                                           -- Treat dash-separated words as a single word
 
--- Editing
+-- ┌───────────────────────────────────────────┐
+-- │ Editing                                   │
+-- └───────────────────────────────────────────┘
+
 opt.expandtab                    = true                             -- Use spaces instead of tabs
 opt.shiftwidth                   = 2                                -- Size of an indent
 opt.tabstop                      = 2                                -- Number of spaces tabs count for
@@ -67,13 +90,24 @@ opt.smartindent                  = true                             -- Use C sty
 opt.shiftround                   = true                             -- Round indent shifts to the nearest step
 opt.virtualedit                  = 'block'                          -- Allow blockwise selection past end of line
 
--- Completion
+-- ┌───────────────────────────────────────────┐
+-- │ Completions                               │
+-- └───────────────────────────────────────────┘
+
 opt.infercase                    = true                             -- Infer case in built-in completion
 
--- Prose
+-- ┌───────────────────────────────────────────┐
+-- │ Prose                                     │
+-- └───────────────────────────────────────────┘
+
 opt.formatlistpat                = [[^\s*[0-9\-\+\*]\+[\.\)]*\s\+]] -- Recognize numbered and bulleted lists
 opt.spelloptions                 = 'camel'                          -- Treat camelCase word parts as separate words
+
 -- stylua: ignore end
+
+-- ┌───────────────────────────────────────────┐
+-- │ Diagnostics                               │
+-- └───────────────────────────────────────────┘
 
 Lib.later(
   function()

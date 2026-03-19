@@ -5,9 +5,9 @@ local M = {}
 local registry = {}
 local group_by_plugin = {}
 
-function M.registry() return vim.deepcopy(registry) end
-
-function M.group(name) return vim.deepcopy(registry[name] or {}) end
+-- ┌───────────────────────────────────────────┐
+-- │ Add Plugin                                │
+-- └───────────────────────────────────────────┘
 
 local function plugin_name(spec)
   if type(spec) == 'string' then
@@ -53,26 +53,9 @@ function M.add(group_name, specs, opts)
   return specs
 end
 
-local group = Lib.augroup('pack')
-
-function M.on_changed(plugin_name_value, kinds, callback, desc)
-  kinds = type(kinds) == 'string' and { kinds } or kinds
-
-  return Lib.autocmd('PackChanged', {
-    group = group,
-    desc = desc or ('Handle vim.pack changes for ' .. plugin_name_value),
-    callback = function(ev)
-      local data = ev.data or {}
-      local spec = data.spec or {}
-
-      if spec.name ~= plugin_name_value then return end
-      if kinds and not vim.tbl_contains(kinds, data.kind) then return end
-
-      if not data.active then vim.cmd.packadd(spec.name) end
-      callback(ev)
-    end,
-  })
-end
+-- ┌───────────────────────────────────────────┐
+-- │ Show Plugin Groups                        │
+-- └───────────────────────────────────────────┘
 
 local function sorted_keys(tbl)
   local keys = vim.tbl_keys(tbl)
@@ -118,5 +101,34 @@ vim.api.nvim_create_user_command(
     desc = 'Show Neocraft vim.pack groups',
   }
 )
+
+-- ┌───────────────────────────────────────────┐
+-- │ Misc                                      │
+-- └───────────────────────────────────────────┘
+
+function M.registry() return vim.deepcopy(registry) end
+
+function M.group(name) return vim.deepcopy(registry[name] or {}) end
+
+function M.on_changed(plugin_name_value, kinds, callback, desc)
+  kinds = type(kinds) == 'string' and { kinds } or kinds
+
+  local group = Lib.augroup('pack')
+
+  return Lib.autocmd('PackChanged', {
+    group = group,
+    desc = desc or ('Handle vim.pack changes for ' .. plugin_name_value),
+    callback = function(ev)
+      local data = ev.data or {}
+      local spec = data.spec or {}
+
+      if spec.name ~= plugin_name_value then return end
+      if kinds and not vim.tbl_contains(kinds, data.kind) then return end
+
+      if not data.active then vim.cmd.packadd(spec.name) end
+      callback(ev)
+    end,
+  })
+end
 
 return M

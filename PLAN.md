@@ -203,6 +203,8 @@
   - status/tab UI
   - notifications
   - buffer management
+- Include low-friction command-line and cursor feedback polish here:
+  - `mini.cursorword`
 - Keep this the main UX layer, so Neocraft feels coherent rather than plugin-fragmented.
 
 ### Stage 6: Keymap Language
@@ -217,6 +219,8 @@
   - terminal/other if needed
 - Use `mini.clue` for discoverability rather than a heavier external helper.
 - Keep mappings explicit and mnemonic.
+- Add motion-oriented extras here once the keymap language is settled:
+  - `mini.jump2d`
 
 ### Stage 7: Files, Search, Git, Sessions, Root
 
@@ -226,9 +230,11 @@
   - `mini.git`
   - `mini.diff`
   - `mini.sessions`
+  - `mini.visits`
   - local `root` helper
 - Add session behavior tied to detected project roots, with storage in XDG state paths.
 - Ensure search/navigation uses root information without forcing cwd changes.
+- If `mini.pick` benefits from it, treat `mini.fuzzy` as an internal implementation detail here rather than as a separate UX layer.
 
 ### Stage 8: Treesitter
 
@@ -236,6 +242,7 @@
 - Keep parser installation explicit and limited at first.
 - Use it for highlighting/indent/textobject support where it clearly improves things.
 - Avoid turning parser management into a giant implicit system.
+- Revisit `mini.indentscope` here once tree-sitter, folding, and code-structure UX are in place.
 
 ### Stage 9: Native LSP + Mason
 
@@ -291,6 +298,7 @@
   - any filetype-specific UX tweaks
 - Core authoring filetypes should likely carry local width rules, like Markdown/Text using `textwidth = 80` and `colorcolumn = "+1"`, while code keeps the global `colorcolumn = "120"` guide.
 - Keep these grouped cleanly so future languages can be added without bloating core files.
+- Consider `mini.hipatterns` here for authoring-focused pattern highlights like TODO/NOTE markers and color literals.
 
 ### Stage 14: Quality And Health
 
@@ -300,6 +308,10 @@
   - readable failure points
   - a clear way to understand what tools are expected
 - Avoid building a framework; just add enough diagnostics to keep the config maintainable.
+- Optional late-stage polish once the main UX is stable:
+  - `mini.map` for overview/navigation, after diagnostics and diff integrations are already useful
+  - `mini.animate` only if it still feels worth the tradeoffs, since it can introduce visual and performance side effects
+  - `mini.base16` if Neocraft wants a small in-repo colorscheme workflow rather than only consuming external themes
 
 ### Stage 15: Documentation And Upgrade Story
 
