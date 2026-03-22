@@ -7,7 +7,6 @@ local opt = vim.opt
 -- └───────────────────────────────────────────┘
 
 vim.g.mapleader                  = ' '                              -- Use `<Space>` as <Leader> key
-vim.g.maplocalleader             = '\\'                             -- Explicitly set `\` (default) as <LocalLeader> key
 vim.g.markdown_recommended_style = 0                                -- Disable legacy markdown style defaults
 vim.g.have_nerd_font             = true                             -- Enable icons in the UI
 
@@ -21,7 +20,7 @@ opt.termguicolors                = true                             -- True colo
 opt.confirm                      = true                             -- Confirm to save changes before exiting modified buffer
 opt.undofile                     = true                             -- Enable persistent undo
 opt.updatetime                   = 250                              -- Decrease update time
-opt.timeoutlen                   = 300                              -- Decrease mapped sequence wait time
+opt.timeoutlen                   = 500                              -- Decrease mapped sequence wait time
 
 -- ┌───────────────────────────────────────────┐
 -- │ UI                                        │
@@ -31,7 +30,7 @@ opt.number                       = true                             -- Show line
 opt.laststatus                   = 3                                -- Show a global statusline.
 opt.winbar                       = "%f"                             -- Show file path in the window bar.
 opt.shortmess:append({ W = true, I = true, c = true, C = true })    -- Suppress unnecessary messages for a cleaner UI.
-opt.relativenumber               = true                             -- Show relative line numbers
+opt.relativenumber               = false                            -- Don't show relative line numbers by default
 opt.showmode                     = false                            -- Don't show mode in command line
 opt.ruler                        = false                            -- Don't show cursor position in command line
 opt.signcolumn                   = 'yes'                            -- Always show signcolumn
@@ -57,6 +56,8 @@ opt.pumheight                    = 10                               -- Keep comp
 opt.pummaxwidth                  = 100                              -- Make popup menu not too wide
 opt.pumborder                    = 'single'                         -- Add a border to popup menus
 opt.winborder                    = 'single'                         -- Use a single border for floating windows
+opt.pumblend                     = 10                               -- Make builtin completion menus slightly transparent
+opt.winblend                     = 10                               -- Make floating windows slightly transparent
 
 -- ┌───────────────────────────────────────────┐
 -- │ Windows                                   │
@@ -100,8 +101,11 @@ opt.infercase                    = true                             -- Infer cas
 -- │ Prose                                     │
 -- └───────────────────────────────────────────┘
 
-opt.formatlistpat                = [[^\s*[0-9\-\+\*]\+[\.\)]*\s\+]] -- Recognize numbered and bulleted lists
+opt.spell                        = true                             -- Enable spelling by default
 opt.spelloptions                 = 'camel'                          -- Treat camelCase word parts as separate words
+opt.conceallevel                 = 3                                -- Hide bold/italic markers in Markdown.
+opt.concealcursor                = "n"                              -- Conceal text in cursorline in normal mode.
+opt.formatlistpat                = [[^\s*[0-9\-\+\*]\+[\.\)]*\s\+]] -- Recognize numbered and bulleted lists
 
 -- stylua: ignore end
 

@@ -1,4 +1,5 @@
 local pack = require('neocraft.core.pack')
+local keymaps = require('neocraft.config.keymaps')
 
 local use_icons = vim.g.have_nerd_font == true
 
@@ -66,6 +67,44 @@ end)
 Lib.now(function() require('mini.tabline').setup() end)
 
 -- ┌───────────────────────────────────────────┐
+-- │ mini.clue                                 │
+-- └───────────────────────────────────────────┘
+
+Lib.later(function()
+  local clue = require('mini.clue')
+  clue.setup({
+    clues = {
+      keymaps.leader_group_clues,
+      clue.gen_clues.builtin_completion(),
+      clue.gen_clues.g(),
+      clue.gen_clues.marks(),
+      clue.gen_clues.registers(),
+      clue.gen_clues.square_brackets(),
+      clue.gen_clues.windows({ submode_resize = true }),
+      clue.gen_clues.z(),
+    },
+    triggers = {
+      { mode = { 'n', 'x' }, keys = '<Leader>' },
+      { mode = 'n', keys = [[\]] },
+      { mode = { 'n', 'x' }, keys = '[' },
+      { mode = { 'n', 'x' }, keys = ']' },
+      { mode = 'i', keys = '<C-x>' },
+      { mode = { 'n', 'x' }, keys = 'g' },
+      { mode = { 'n', 'x' }, keys = "'" },
+      { mode = { 'n', 'x' }, keys = '`' },
+      { mode = { 'n', 'x' }, keys = '"' },
+      { mode = { 'i', 'c' }, keys = '<C-r>' },
+      { mode = 'n', keys = '<C-w>' },
+      { mode = { 'n', 'x' }, keys = 'z' },
+    },
+    window = {
+      delay = 200,
+      config = { width = 'auto' },
+    },
+  })
+end)
+
+-- ┌───────────────────────────────────────────┐
 -- │ mini.ai                                   │
 -- └───────────────────────────────────────────┘
 
@@ -95,16 +134,57 @@ Lib.later(function()
 end)
 
 -- ┌───────────────────────────────────────────┐
+-- │ mini.jump2d                               │
+-- └───────────────────────────────────────────┘
+
+Lib.later(function()
+  require('mini.jump2d').setup({
+    mappings = {
+      start_jumping = 's',
+    },
+  })
+end)
+
+-- ┌───────────────────────────────────────────┐
 -- │ mini.surround                             │
 -- └───────────────────────────────────────────┘
 
 -- Example usage for mini.surround:
---  * saiw{char}            - [s]urround [a]dd around [i]nside [w]ord {char}
---  * saiwt -> {tag}        - [s]urround [a]dd around [i]nside [w]ord [t]ag {tag}
---  * sd{char}              - [s]urround [d]elete {char}
---  * sr{char}{replacement} - [s]urround [r]eplce {char} with {replacement}
---  Note: `(` = tight, `)` = adds spaces
-Lib.later(function() require('mini.surround').setup() end)
+--  * ysiw{char}             - [y]es [s]urround [i]nside [w]ord with {char}
+--  * ysawt -> {tag}         - [y]es [s]urround [a]round [w]ord with [t]ag {tag}
+--  * yassq                  - [y]es [s]urround [s]entence (ss = line) with [q]uotes
+--  * ds{char}               - [d]elete [s]urrounding {char}
+--  * cs{char}{replacement}  - [c]hange [s]urrounding {char} with {replacement}
+--  * S (Visual mode)        - [S]urround current selection
+Lib.later(function()
+  require('mini.surround').setup({
+    mappings = {
+      add = 'ys',
+      delete = 'ds',
+      find = '',
+      find_left = '',
+      highlight = '',
+      replace = 'cs',
+      suffix_last = '',
+      suffix_next = '',
+    },
+    search_method = 'cover',
+  })
+
+  -- S in Visual mode is a common convenience. Also delete `ys` from Visual mode (since its accompanying `ds`/`cs` don't exist in Visual mode anyway)
+  vim.keymap.del('x', 'ys')
+  vim.keymap.set('x', 'S', [[:<C-u>lua MiniSurround.add('visual')<CR>]], {
+    desc = 'Add surrounding to selection',
+    silent = true,
+  })
+
+  -- Alias the common `yss` ("yes surround sentence / line") to mini.surround's `ys_`
+  vim.keymap.set('n', 'yss', 'ys_', {
+    desc = 'Add surrounding to line',
+    remap = true,
+    silent = true,
+  })
+end)
 
 -- ┌───────────────────────────────────────────┐
 -- │ mini.pairs                                │

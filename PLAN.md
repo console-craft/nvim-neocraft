@@ -209,16 +209,35 @@
 
 ### Stage 6: Keymap Language
 
-- Define a stable leader taxonomy, likely influenced by MiniMax:
-  - buffer
-  - edit/explore
-  - find
-  - git
-  - language
-  - session
-  - terminal/other if needed
+- Define a hybrid keymap language instead of a fully namespaced tree:
+  - reserve a small set of `<Leader>{single-key}` mappings for truly hot-path actions
+  - use namespaces only for broader or colder workflow families
+  - avoid junk-drawer prefixes like a generic `other` bucket
+- Stage 6 should establish the shape, not force every future workflow to have a prefix immediately.
+- Initial Stage 6 layout:
+  - `\` = editor toggles
+  - hot-path singletons for things like splits/close and later files/grep/picker entrypoints
+  - earned namespaces for:
+    - buffer
+    - tabs
+  - reserve future meanings without binding them until the backing behavior exists:
+    - code
+    - git/hunks
+    - focus list / "x marks the spot"
 - Use `mini.clue` for discoverability rather than a heavier external helper.
-- Keep mappings explicit and mnemonic.
+- Keep mappings explicit, mnemonic, and command-first when an action is rare.
+- Favor vim-surround-style surround verbs over `mini.surround` defaults:
+  - `ys` add
+  - `ds` delete
+  - `cs` change
+  - `S` in Visual mode to surround the current selection
+  - keep surround search deterministic with `search_method = "cover"`
+- Reserve plain `s` for `mini.jump2d` so it acts as the primary in-window jump motion.
+- Keep rare/admin actions out of leader space for now:
+  - notifications stay command-first
+  - `vim.pack` introspection stays command-first
+  - surface those later through the action picker instead of an `other` namespace
+- Reserve `<Leader><Leader>` as the premium entrypoint for a future curated focus list once Stage 7 adds the backing store.
 - Add motion-oriented extras here once the keymap language is settled:
   - `mini.jump2d`
 
@@ -232,6 +251,22 @@
   - `mini.sessions`
   - `mini.visits`
   - local `root` helper
+- Power the Stage 6 hot-path search/navigation lane here:
+  - `<Leader>f` find files
+  - `<Leader>g` grep live
+  - `<Leader>*` grep current word
+  - `<Leader>r` resume picker
+  - `<Leader>p` choose picker
+  - `<C-p>` action picker for important commands and mapped workflows
+  - `<C-x>` file explorer
+- Use `mini.visits` to back the curated working-set / focus-list idea:
+  - `<Leader><Leader>` open the current focus list
+  - `<Leader>xa` add current file/location
+  - `<Leader>xd` remove current file/location
+  - decide here whether that list is file-based or exact-location-based
+- Land the first `<Leader>h` Git mappings here as `mini.git` and `mini.diff` become available.
+- Keep notifications and `:NeocraftPack` command-first, but surface them through the action picker.
+- Add a lightweight floating terminal entrypoint on `<C-/>`; avoid a full terminal namespace unless it proves necessary.
 - Add session behavior tied to detected project roots, with storage in XDG state paths.
 - Ensure search/navigation uses root information without forcing cwd changes.
 - If `mini.pick` benefits from it, treat `mini.fuzzy` as an internal implementation detail here rather than as a separate UX layer.
@@ -256,6 +291,10 @@
   - a central list of LSP servers
   - a central list of external tools to auto-install
   - a Kickstart-style `LspAttach` callback for buffer-local mappings and capability-based features
+- Use `<Leader>c` as the shared code namespace for LSP-native actions.
+- Start with hover, rename, code action, definitions/references, diagnostics, and formatting.
+- If tests or debug workflows are later added, fit them under `<Leader>c` only when they prove common enough.
+- After adding buffer-local code mappings, refresh `mini.clue` triggers for those buffers during `LspAttach` if needed.
 - Use Neovim-native `vim.lsp.config()` / `vim.lsp.enable()` patterns.
 
 ### Stage 10: Server-Specific LSP Files
