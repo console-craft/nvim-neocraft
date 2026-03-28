@@ -1,5 +1,7 @@
 local opt = vim.opt
 
+vim.env.RIPGREP_CONFIG_PATH = vim.fs.joinpath(vim.fn.stdpath('config'), '.ripgreprc')
+
 -- stylua: ignore start
 
 -- ┌───────────────────────────────────────────┐

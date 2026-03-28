@@ -293,6 +293,8 @@
   - a Kickstart-style `LspAttach` callback for buffer-local mappings and capability-based features
 - Use `<Leader>c` as the shared code namespace for LSP-native actions.
 - Start with hover, rename, code action, definitions/references, diagnostics, and formatting.
+- Revisit `mini.files` file operations here: when files are renamed or moved through `mini.files`, notify supporting LSP clients with `workspace/willRenameFiles` / `workspace/didRenameFiles` so servers can update imports and related references.
+- Keep that integration LSP-owned and explicit in `plugins/lsp.lua`, not embedded as a bigger `mini.files` abstraction.
 - If tests or debug workflows are later added, fit them under `<Leader>c` only when they prove common enough.
 - After adding buffer-local code mappings, refresh `mini.clue` triggers for those buffers during `LspAttach` if needed.
 - Use Neovim-native `vim.lsp.config()` / `vim.lsp.enable()` patterns.

@@ -20,9 +20,11 @@ local function tmap(lhs, rhs, desc, opts)
   map('t', lhs, rhs, vim.tbl_extend('force', { silent = true, desc = desc }, opts or {}))
 end
 local function nmap_leader(lhs, rhs, desc, opts) nmap('<leader>' .. lhs, rhs, desc, opts) end
+local function xmap_leader(lhs, rhs, desc, opts) xmap('<leader>' .. lhs, rhs, desc, opts) end
 
 local leader_group_clues = {
   { mode = 'n', keys = '<Leader>b', desc = '+Buffers' },
+  { mode = 'n', keys = '<Leader>g', desc = '+Git' },
   { mode = 'n', keys = '<Leader><Tab>', desc = '+Tabs' },
 }
 
@@ -193,9 +195,11 @@ nmap('<C-]>', '<Cmd>bnext<CR>', 'Next buffer')
 nmap('<C-[>', '<Cmd>bprevious<CR>', 'Previous buffer')
 nmap('<C-n>', '<cmd>enew | startinsert<cr>', 'New buffer')
 nmap('<C-c>', function() require('mini.bufremove').delete(0, false) end, 'Delete buffer')
+nmap('<C-x>', function() require('neocraft.plugins.mini').open_files() end, 'Toggle file explorer')
+nmap('<C-Space>', function() require('neocraft.plugins.git').toggle_overlay() end, 'Toggle diff overlay')
 
-nmap('[t', '<Cmd>tabprevious<CR>', 'Previous tab')
-nmap(']t', '<Cmd>tabnext<CR>', 'Next tab')
+nmap('[<Tab>', '<Cmd>tabprevious<CR>', 'Previous tab')
+nmap(']<Tab>', '<Cmd>tabnext<CR>', 'Next tab')
 
 -- TODO: (in the future) - format (\f), inlay hints (\h). code lens (\l), minimap (\m),
 nmap('\\b', toggle_background, 'Toggle background')
@@ -211,13 +215,18 @@ nmap('\\w', function() toggle_window_option('wrap') end, 'Toggle line wrap')
 nmap('\\z', toggle_folds, 'Toggle folds open or closed')
 
 -- Hot-path leader mappings
-nmap_leader('s', '<C-w>s', 'Split window below')
-nmap_leader('v', '<C-w>v', 'Split window right')
+nmap_leader('f', function() require('neocraft.plugins.mini').pick_files() end, 'Find files')
+nmap_leader('/', function() require('neocraft.plugins.mini').grep_live() end, 'Grep text')
+nmap_leader('*', function() require('neocraft.plugins.mini').grep_cword() end, 'Grep word')
+nmap_leader('r', function() require('neocraft.plugins.mini').resume_picker() end, 'Resume picker')
+nmap_leader('p', function() require('neocraft.plugins.mini').pick_registry() end, 'Pickers')
+nmap_leader('s', '<C-w>s', 'Split below')
+nmap_leader('v', '<C-w>v', 'Split right')
 nmap_leader('q', '<C-w>c', 'Close window')
 
 -- Buffer namespace
-nmap_leader('ba', '<cmd>e #<cr>', 'Alternate buffer / Reopen accidental close')
-nmap_leader('bd', delete_other_buffers, 'Delete other buffers')
+nmap_leader('ba', '<cmd>e #<cr>', 'Alternate buffer')
+nmap_leader('bd', delete_other_buffers, 'Delete other')
 nmap_leader('br', reload_buffer, 'Reload buffer')
 nmap_leader('bt', set_buffer_filetype, 'Set buffer type')
 nmap_leader('by', yank_relative_path, 'Copy relative path')
@@ -228,6 +237,18 @@ nmap_leader('<Tab><Tab>', 'g<Tab>', 'Alternate tab')
 nmap_leader('<Tab>n', '<Cmd>tabnew<CR>', 'New tab')
 nmap_leader('<Tab>c', '<Cmd>tabclose<CR>', 'Close tab')
 nmap_leader('<Tab>d', '<Cmd>tabonly<CR>', 'Delete other tabs')
+
+-- Git namespaces
+nmap_leader('ga', function() require('neocraft.plugins.git').add_file() end, 'Add buffer')
+nmap_leader('gA', function() require('neocraft.plugins.git').add_all() end, 'Add all')
+nmap_leader('gb', function() require('neocraft.plugins.git').blame() end, 'Blame')
+nmap_leader('gc', function() require('neocraft.plugins.git').commit() end, 'Commit')
+nmap_leader('gC', function() require('neocraft.plugins.git').commit_amend() end, 'Commit amend')
+nmap_leader('gd', function() require('neocraft.plugins.git').details() end, 'Details at cursor')
+xmap_leader('gd', function() require('neocraft.plugins.git').details() end, 'Details at selection')
+nmap_leader('gl', function() require('neocraft.plugins.git').log_repo() end, 'Log')
+nmap_leader('gL', function() require('neocraft.plugins.git').log_buffer() end, 'Log buffer')
+nmap_leader('gs', function() require('neocraft.plugins.git').status() end, 'Status')
 
 nmap('[p', '<Cmd>exe "iput! " . v:register<CR>', 'Paste Above')
 nmap(']p', '<Cmd>exe "iput "  . v:register<CR>', 'Paste Below')

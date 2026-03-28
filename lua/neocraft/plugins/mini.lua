@@ -1,7 +1,10 @@
 local pack = require('neocraft.core.pack')
 local keymaps = require('neocraft.config.keymaps')
+local pickers = require('neocraft.pickers')
+local root = require('neocraft.core.root')
 
 local use_icons = vim.g.have_nerd_font == true
+local M = {}
 
 pack.add('mini', {
   { src = 'https://github.com/nvim-mini/mini.nvim' },
@@ -65,6 +68,168 @@ end)
 -- └───────────────────────────────────────────┘
 
 Lib.now(function() require('mini.tabline').setup() end)
+
+-- ┌───────────────────────────────────────────┐
+-- │ mini.extra                                │
+-- └───────────────────────────────────────────┘
+
+Lib.later(function() require('mini.extra').setup() end)
+
+-- ┌───────────────────────────────────────────┐
+-- │ mini.files                                │
+-- └───────────────────────────────────────────┘
+
+local function resolve_buf(buf) return (buf == nil or buf == 0) and vim.api.nvim_get_current_buf() or buf end
+
+local function realpath(path) return root.realpath(path) end
+
+local function path_type(path)
+  local stat = path and vim.uv.fs_stat(path) or nil
+  return stat and stat.type or nil
+end
+
+local function files_anchor(buf)
+  buf = resolve_buf(buf)
+
+  local name = vim.api.nvim_buf_get_name(buf)
+  local buftype = vim.bo[buf].buftype
+  local fallback = root.get({ buf = buf })
+
+  if name == '' or buftype ~= '' then return fallback end
+
+  local normalized = realpath(name) or vim.fs.normalize(name)
+
+  if path_type(normalized) ~= nil then return normalized end
+
+  local parent = vim.fs.dirname(normalized)
+  if path_type(parent) == 'directory' then return realpath(parent) or parent end
+
+  return fallback
+end
+
+function M.open_files(buf)
+  local mini_files = require('mini.files')
+
+  if mini_files.get_explorer_state() then
+    mini_files.close()
+    return
+  end
+
+  buf = resolve_buf(buf)
+
+  local project_root = root.get({ buf = buf })
+  mini_files.open(files_anchor(buf), false)
+  mini_files.reveal_cwd()
+  mini_files.set_bookmark('~', project_root, { desc = 'Project root' })
+end
+
+Lib.later(
+  function()
+    require('mini.files').setup({
+      windows = {
+        preview = false,
+        width_nofocus = 30,
+        width_focus = 30,
+        width_preview = 30,
+      },
+      mappings = {
+        go_in_plus = '<CR>',
+        close = '<Esc>',
+      },
+      options = {
+        use_as_default_explorer = true,
+      },
+    })
+  end
+)
+
+-- ┌───────────────────────────────────────────┐
+-- │ mini.pick                                 │
+-- └───────────────────────────────────────────┘
+
+function M.grep_cword(buf, opts) return pickers.grep_cword(buf, opts) end
+
+function M.pick_autocmds() return pickers.autocmds() end
+
+function M.pick_registry() return pickers.registry() end
+
+-- mini.pick setup
+
+local function pick_cwd(buf, kind)
+  local resolver = kind == 'git' and root.git or root.get
+  return resolver({ buf = resolve_buf(buf) })
+end
+
+local function pick_start_opts(buf, opts, kind)
+  local start_opts = vim.deepcopy(opts or {})
+  start_opts.source = start_opts.source or {}
+  start_opts.source.cwd = start_opts.source.cwd or pick_cwd(buf, kind)
+  return start_opts
+end
+
+function M.pick_builtin(name, local_opts, opts)
+  opts = vim.deepcopy(opts or {})
+
+  local buf = opts.buf
+  local kind = opts.kind or 'project'
+  opts.buf = nil
+  opts.kind = nil
+
+  local builtin = require('mini.pick').builtin[name]
+  if type(builtin) ~= 'function' then error(('Unknown MiniPick builtin: %s'):format(name)) end
+
+  return builtin(local_opts, pick_start_opts(buf, opts, kind))
+end
+
+function M.pick_extra(name, local_opts, opts)
+  opts = vim.deepcopy(opts or {})
+
+  local buf = opts.buf
+  local kind = opts.kind or 'project'
+  opts.buf = nil
+  opts.kind = nil
+
+  local picker = require('mini.extra').pickers[name]
+  if type(picker) ~= 'function' then error(('Unknown MiniExtra picker: %s'):format(name)) end
+
+  return picker(local_opts, pick_start_opts(buf, opts, kind))
+end
+
+function M.pick_files(buf, opts)
+  opts = vim.tbl_extend('force', { buf = buf }, opts or {})
+  return M.pick_builtin('files', nil, opts)
+end
+
+function M.grep_live(buf, opts)
+  opts = vim.tbl_extend('force', { buf = buf }, opts or {})
+  return M.pick_builtin('grep_live', nil, opts)
+end
+
+function M.resume_picker() return require('mini.pick').builtin.resume() end
+
+local win_config = function()
+  local lines = vim.o.lines
+  local columns = vim.o.columns
+  local height = math.min(math.max(math.floor(lines * 0.75), 25), 50)
+  local width = math.min(math.max(math.floor(columns * 0.90), 80), 180)
+  height = math.min(height, lines - 2)
+  width = math.min(width, columns - 4)
+  return {
+    anchor = 'NW',
+    height = height,
+    width = width,
+    row = math.floor((lines - height) * 0.5),
+    col = math.floor((columns - width) * 0.5),
+  }
+end
+
+Lib.later(function()
+  local mini_pick = require('mini.pick')
+
+  mini_pick.setup({ window = { config = win_config } })
+  mini_pick.registry.autocmds = pickers.autocmds
+  mini_pick.registry.grep_cword = pickers.grep_cword
+end)
 
 -- ┌───────────────────────────────────────────┐
 -- │ mini.clue                                 │
@@ -254,4 +419,4 @@ vim.api.nvim_create_user_command(
   }
 )
 
-return {}
+return M
