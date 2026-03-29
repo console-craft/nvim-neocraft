@@ -74,11 +74,15 @@ function M.commit() git('commit') end
 
 function M.commit_amend() git('commit --amend') end
 
--- Show contextual git-related details based on file type and what is currently selected or under the cursor:
+-- Open contextual git-related data based on file type and what is currently selected or under the cursor:
 -- * normal file: show line diff history
 -- * diff patch:  show state of file belonging to the version under cursor
 -- * commit hash: show the commit associated to that hash
-function M.details() require('mini.git').show_at_cursor({ split = 'auto' }) end
+function M.open() require('mini.git').show_at_cursor({ split = 'auto' }) end
+
+function M.diff() git('diff') end
+
+function M.diff_staged() git('diff --cached') end
 
 function M.log_repo() git('log --oneline --topo-order') end
 
@@ -104,14 +108,38 @@ Lib.later(
           delete = '▎',
         },
       },
+      options = {
+        wrap_goto = true,
+        algorithm = 'patience',
+        indent_heuristic = false,
+        linematch = 0,
+      },
     })
   end
 )
 
 function M.toggle_overlay() require('mini.diff').toggle_overlay(0) end
 
--- Lib.later(function() require('mini.git').setup({ command = { split = 'tab' } }) end)
+Lib.autocmd('User', {
+  group = Lib.augroup('git'),
+  pattern = 'MiniGitCommandSplit',
+  desc = 'Ensure mini.clue triggers in Git output buffers',
+  callback = function(args)
+    local data = args.data or {}
+    local win = data.win_stdout
+    if type(win) ~= 'number' or not vim.api.nvim_win_is_valid(win) then return end
+
+    vim.schedule(function()
+      if not vim.api.nvim_win_is_valid(win) then return end
+
+      local ok, clue = pcall(require, 'mini.clue')
+      if not ok then return end
+
+      clue.ensure_buf_triggers(vim.api.nvim_win_get_buf(win))
+    end)
+  end,
+})
+
 Lib.later(function() require('mini.git').setup() end)
 
 return M
-

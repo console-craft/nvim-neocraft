@@ -20,11 +20,12 @@ local function tmap(lhs, rhs, desc, opts)
   map('t', lhs, rhs, vim.tbl_extend('force', { silent = true, desc = desc }, opts or {}))
 end
 local function nmap_leader(lhs, rhs, desc, opts) nmap('<leader>' .. lhs, rhs, desc, opts) end
-local function xmap_leader(lhs, rhs, desc, opts) xmap('<leader>' .. lhs, rhs, desc, opts) end
 
 local leader_group_clues = {
   { mode = 'n', keys = '<Leader>b', desc = '+Buffers' },
   { mode = 'n', keys = '<Leader>g', desc = '+Git' },
+  { mode = 'n', keys = '<Leader>l', desc = '+Lists' },
+  { mode = 'n', keys = '<Leader>x', desc = '+Focus' },
   { mode = 'n', keys = '<Leader><Tab>', desc = '+Tabs' },
 }
 
@@ -177,8 +178,17 @@ end
 
 nmap('j', "v:count == 0 ? 'gj' : 'j'", 'Move cursor down one visual line', { expr = true })
 nmap('k', "v:count == 0 ? 'gk' : 'k'", 'Move cursor up one visual line', { expr = true })
+nmap(
+  '<C-d>',
+  function() return require('neocraft.actions').halfpage_down() end,
+  'Scroll half-page down',
+  { expr = true }
+)
+nmap('<C-u>', function() return require('neocraft.actions').halfpage_up() end, 'Scroll half-page up', { expr = true })
 xmap('j', "v:count == 0 ? 'gj' : 'j'", 'Move cursor down one visual line', { expr = true })
 xmap('k', "v:count == 0 ? 'gk' : 'k'", 'Move cursor up one visual line', { expr = true })
+xmap('<', '<gv', 'Indent left and keep selection')
+xmap('>', '>gv', 'Indent right and keep selection')
 
 cmap('<M-h>', '<Left>', 'Left', { silent = false })
 cmap('<M-l>', '<Right>', 'Right', { silent = false })
@@ -186,15 +196,29 @@ imap('<M-h>', '<Left>', 'Left', { noremap = false })
 imap('<M-j>', '<Down>', 'Down', { noremap = false })
 imap('<M-k>', '<Up>', 'Up', { noremap = false })
 imap('<M-l>', '<Right>', 'Right', { noremap = false })
+imap(',', ',<C-g>u', 'Insert comma with undo breakpoint')
+imap('.', '.<C-g>u', 'Insert period with undo breakpoint')
+imap(';', ';<C-g>u', 'Insert semicolon with undo breakpoint')
 tmap('<M-h>', '<Left>', 'Left')
 tmap('<M-j>', '<Down>', 'Down')
 tmap('<M-k>', '<Up>', 'Up')
 tmap('<M-l>', '<Right>', 'Right')
+nmap('<M-h>', 'zh', 'Scroll view left')
+nmap('<M-l>', 'zl', 'Scroll view right')
+nmap('<M-H>', 'zH', 'Scroll view half-screen left')
+nmap('<M-L>', 'zL', 'Scroll view half-screen right')
+nmap('<M-j>', function() require('neocraft.actions').move_lines_down() end, 'Move line down')
+nmap('<M-k>', function() require('neocraft.actions').move_lines_up() end, 'Move line up')
+xmap('<M-j>', ":<C-u>execute \"'<,'>move '>+\" . v:count1<CR>gv=gv", 'Move selection down')
+xmap('<M-k>', ":<C-u>execute \"'<,'>move '<-\" . (v:count1 + 1)<CR>gv=gv", 'Move selection up')
 
 nmap('<C-]>', '<Cmd>bnext<CR>', 'Next buffer')
 nmap('<C-[>', '<Cmd>bprevious<CR>', 'Previous buffer')
 nmap('<C-n>', '<cmd>enew | startinsert<cr>', 'New buffer')
 nmap('<C-c>', function() require('mini.bufremove').delete(0, false) end, 'Delete buffer')
+nmap('<C-p>', function() require('neocraft.pickers').actions() end, 'Action picker')
+nmap('<C-/>', function() require('neocraft.terminal').toggle() end, 'Toggle floating terminal')
+nmap('<C-_>', function() require('neocraft.terminal').toggle() end, 'Toggle floating terminal')
 nmap('<C-x>', function() require('neocraft.plugins.mini').open_files() end, 'Toggle file explorer')
 nmap('<C-Space>', function() require('neocraft.plugins.git').toggle_overlay() end, 'Toggle diff overlay')
 
@@ -215,11 +239,13 @@ nmap('\\w', function() toggle_window_option('wrap') end, 'Toggle line wrap')
 nmap('\\z', toggle_folds, 'Toggle folds open or closed')
 
 -- Hot-path leader mappings
+nmap('<C-CR>', function() require('neocraft.actions').toggle_maximized() end, 'Maximize')
 nmap_leader('f', function() require('neocraft.plugins.mini').pick_files() end, 'Find files')
 nmap_leader('/', function() require('neocraft.plugins.mini').grep_live() end, 'Grep text')
 nmap_leader('*', function() require('neocraft.plugins.mini').grep_cword() end, 'Grep word')
 nmap_leader('r', function() require('neocraft.plugins.mini').resume_picker() end, 'Resume picker')
 nmap_leader('p', function() require('neocraft.plugins.mini').pick_registry() end, 'Pickers')
+nmap_leader('y', [[:silent keepjumps %yank<CR>]], 'Copy file contents')
 nmap_leader('s', '<C-w>s', 'Split below')
 nmap_leader('v', '<C-w>v', 'Split right')
 nmap_leader('q', '<C-w>c', 'Close window')
@@ -235,28 +261,58 @@ nmap_leader('bY', yank_absolute_path, 'Copy absolute path')
 -- Tabs namespace
 nmap_leader('<Tab><Tab>', 'g<Tab>', 'Alternate tab')
 nmap_leader('<Tab>n', '<Cmd>tabnew<CR>', 'New tab')
-nmap_leader('<Tab>c', '<Cmd>tabclose<CR>', 'Close tab')
 nmap_leader('<Tab>d', '<Cmd>tabonly<CR>', 'Delete other tabs')
+nmap_leader('<Tab>q', '<Cmd>tabclose<CR>', 'Close tab')
 
 -- Git namespaces
+nmap('go', function() require('neocraft.plugins.git').open() end, 'Git open')
+xmap('go', function() require('neocraft.plugins.git').open() end, 'Git open')
 nmap_leader('ga', function() require('neocraft.plugins.git').add_file() end, 'Add buffer')
 nmap_leader('gA', function() require('neocraft.plugins.git').add_all() end, 'Add all')
 nmap_leader('gb', function() require('neocraft.plugins.git').blame() end, 'Blame')
 nmap_leader('gc', function() require('neocraft.plugins.git').commit() end, 'Commit')
 nmap_leader('gC', function() require('neocraft.plugins.git').commit_amend() end, 'Commit amend')
-nmap_leader('gd', function() require('neocraft.plugins.git').details() end, 'Details at cursor')
-xmap_leader('gd', function() require('neocraft.plugins.git').details() end, 'Details at selection')
+nmap_leader('gd', function() require('neocraft.plugins.git').diff() end, 'Diff')
+nmap_leader('gD', function() require('neocraft.plugins.git').diff_staged() end, 'Diff staged')
 nmap_leader('gl', function() require('neocraft.plugins.git').log_repo() end, 'Log')
 nmap_leader('gL', function() require('neocraft.plugins.git').log_buffer() end, 'Log buffer')
 nmap_leader('gs', function() require('neocraft.plugins.git').status() end, 'Status')
 
+-- Lists namespace
+nmap_leader('lc', function()
+  local success, err = pcall(vim.cmd.copen)
+  if not success and err then vim.notify(err, vim.log.levels.ERROR) end
+end, 'Quickfix list')
+nmap_leader('ll', function()
+  vim.diagnostic.setloclist()
+  local success, err = pcall(vim.cmd.lopen)
+  if not success and err then vim.notify(err, vim.log.levels.ERROR) end
+end, 'Location list')
+
+-- Focus namespace
+nmap_leader('<Leader>', function() require('neocraft.visits').pick_focus() end, 'Focus list')
+nmap_leader('xa', function() require('neocraft.visits').add_focus() end, 'Add item to focus list')
+nmap_leader('xc', function() require('neocraft.visits').remove_focus() end, 'Clear item from focus list')
+nmap_leader('xd', function()
+  local choice = vim.fn.confirm('Delete all from focus list?', '&Yes\n&No\n&Cancel', 2)
+  if choice == 1 then require('neocraft.visits').remove_all_focus() end
+end, 'Delete all from focus list')
+
 nmap('[p', '<Cmd>exe "iput! " . v:register<CR>', 'Paste Above')
 nmap(']p', '<Cmd>exe "iput "  . v:register<CR>', 'Paste Below')
+nmap('gV', '`[v`]', 'Reselect last paste/change')
 xmap('p', 'P', 'Paste without yanking replaced selection')
 
 nmap('<C-s>', '<Cmd>silent! update | redraw<CR>', 'Save')
 imap('<C-s>', '<Esc><Cmd>silent! update | redraw<CR>', 'Save and go to Normal mode')
 xmap('<C-s>', '<Esc><Cmd>silent! update | redraw<CR>', 'Save and go to Normal mode')
+map(
+  { 'i', 'x', 'n', 's' },
+  '<C-S-r>',
+  function() require('neocraft.actions').restart_neovim() end,
+  { desc = 'Restart Neovim' }
+)
+nmap('<C-q>', function() require('neocraft.actions').quit_neovim() end, 'Quit Neovim')
 
 nmap('<Esc>', '<Cmd>nohlsearch<CR>', 'Clear search highlight')
 
@@ -298,6 +354,8 @@ nmap(']e', goto_diagnostic(true, 'ERROR'), 'Next diagnostic error')
 nmap('[e', goto_diagnostic(false, 'ERROR'), 'Prev diagnostic error')
 
 tmap('<Esc><Esc>', '<C-\\><C-n>', 'Exit terminal mode')
+tmap('<C-/>', function() require('neocraft.terminal').toggle() end, 'Toggle floating terminal')
+tmap('<C-_>', function() require('neocraft.terminal').toggle() end, 'Toggle floating terminal')
 
 return {
   leader_group_clues = leader_group_clues,

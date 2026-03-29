@@ -35,6 +35,10 @@
 - `lua/neocraft/config/options.lua`
 - `lua/neocraft/config/autocmds.lua`
 - `lua/neocraft/config/keymaps.lua`
+- `lua/neocraft/actions.lua`
+- `lua/neocraft/pickers.lua`
+- `lua/neocraft/visits.lua`
+- `lua/neocraft/terminal.lua`
 - `lua/neocraft/core/helpers.lua`
 - `lua/neocraft/core/pack.lua`
 - `lua/neocraft/core/root.lua`
@@ -98,7 +102,7 @@
 - Sessions should be global, not per-project filesystem artifacts.
 - Store session files under a Neovim XDG path, preferably something like `stdpath("state") .. "/sessions"` or an equivalent dedicated session directory.
 - Session identity should be derived from project location/root, not stored inside the project.
-- Session filenames should be mapped from project root in a stable way, likely encoded or hashed from the absolute path.
+- Session filenames should be mapped from the full normalized project root path in a stable filesystem-safe way, so identically named projects in different directories stay distinct.
 - Session behavior should work with your root helper, so "this project" resolves consistently for session save/load/delete.
 - This keeps project folders clean and makes sessions feel like editor state, not repository content.
 
@@ -251,23 +255,37 @@
   - `mini.sessions`
   - `mini.visits`
   - local `root` helper
+- Stage 7 should stay root-aware without becoming cwd-driven:
+  - detect project roots explicitly
+  - scope pickers, sessions, visits, terminal startup, and file explorer fallbacks from the root helper
+  - do not automatically `:cd` or restore `curdir` from sessions
 - Power the Stage 6 hot-path search/navigation lane here:
   - `<Leader>f` find files
-  - `<Leader>g` grep live
+  - `<Leader>/` grep live
   - `<Leader>*` grep current word
   - `<Leader>r` resume picker
-  - `<Leader>p` choose picker
-  - `<C-p>` action picker for important commands and mapped workflows
-  - `<C-x>` file explorer
+  - `<Leader>p` choose from all registered pickers
+  - `<C-p>` curated action picker for hidden keymaps and command-first workflows
+  - `<C-x>` file explorer, opening around the current file when possible and falling back to project root otherwise
 - Use `mini.visits` to back the curated working-set / focus-list idea:
-  - `<Leader><Leader>` open the current focus list
-  - `<Leader>xa` add current file/location
-  - `<Leader>xd` remove current file/location
-  - decide here whether that list is file-based or exact-location-based
-- Land the first `<Leader>h` Git mappings here as `mini.git` and `mini.diff` become available.
+  - keep the list file-based and let Neovim's last-position restore handle intra-file return points
+  - track visits per detected project root instead of per cwd
+  - use a dedicated `focus` label for the curated list
+  - `<Leader><Leader>` open the current project focus list
+  - `<Leader>xa` add current file to the focus list
+  - `<Leader>xc` remove current file from the focus list
+  - `<Leader>xd` clear the current project focus list
+- Land the first `<Leader>g` Git mappings here as `mini.git` and `mini.diff` become available.
+- Keep `go` as the contextual Git "open at cursor" action backed by `mini.git.show_at_cursor()`.
+- Keep `mini.diff` built-in hunk motions/operators as the primary low-level hunk language instead of duplicating them in leader mappings.
 - Keep notifications and `:NeocraftPack` command-first, but surface them through the action picker.
-- Add a lightweight floating terminal entrypoint on `<C-/>`; avoid a full terminal namespace unless it proves necessary.
+- Add a lightweight floating terminal entrypoint on `<C-/>` / `<C-_>`; reuse one floating terminal buffer globally, start it in detected project root, and avoid a full terminal namespace unless it proves necessary.
 - Add session behavior tied to detected project roots, with storage in XDG state paths.
+- Make sessions automatic for bare `nvim` startup and normal exit:
+  - restore the current project session on bare startup if it exists
+  - otherwise start fresh and create it on exit
+  - add a one-shot "restart fresh" flow which discards the current project session before restart
+- Treat `mini.extra` list pickers as generic building blocks, but add explicit `quickfix_list` and `location_list` wrappers for discovery in the picker browser.
 - Ensure search/navigation uses root information without forcing cwd changes.
 - If `mini.pick` benefits from it, treat `mini.fuzzy` as an internal implementation detail here rather than as a separate UX layer.
 
@@ -380,6 +398,9 @@
 - Sessions: global XDG state storage by project-root mapping
 - Search/files: `mini.pick` + `mini.files`
 - Git: `mini.git` + `mini.diff`
+- Focus list: `mini.visits` with root-scoped file labels
+- Terminal: one reusable floating terminal on `<C-/>`
+- Hidden actions: curated picker on `<C-p>`
 - Discoverability: `mini.clue`
 - UI/status: mini modules first
 - External tools: auto-installed by Mason from declared lists

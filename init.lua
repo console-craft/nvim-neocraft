@@ -35,6 +35,7 @@ require('neocraft.config.keymaps')
 require('neocraft.core.pack')
 require('neocraft.core.root')
 require('neocraft.core.sessions')
+require('neocraft.terminal')
 
 -- ┌───────────────────────────────────────────┐
 -- │ Plugins                                   │

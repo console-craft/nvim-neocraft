@@ -2,6 +2,7 @@ local pack = require('neocraft.core.pack')
 local keymaps = require('neocraft.config.keymaps')
 local pickers = require('neocraft.pickers')
 local root = require('neocraft.core.root')
+local visits = require('neocraft.visits')
 
 local use_icons = vim.g.have_nerd_font == true
 local M = {}
@@ -44,13 +45,21 @@ Lib.now(function()
   })
 end)
 
-vim.api.nvim_create_user_command('NeocraftNotifications', function() require('mini.notify').show_history() end, {
-  desc = 'Show Neocraft notification history',
-})
+vim.api.nvim_create_user_command(
+  'NeocraftNotifications',
+  function() require('neocraft.actions').show_notifications() end,
+  {
+    desc = 'Show Neocraft notification history',
+  }
+)
 
-vim.api.nvim_create_user_command('NeocraftNotificationsClear', function() require('mini.notify').clear() end, {
-  desc = 'Clear Neocraft visible notifications',
-})
+vim.api.nvim_create_user_command(
+  'NeocraftNotificationsClear',
+  function() require('neocraft.actions').clear_notifications() end,
+  {
+    desc = 'Clear Neocraft visible notifications',
+  }
+)
 
 -- ┌───────────────────────────────────────────┐
 -- │ mini.statusline                           │
@@ -68,6 +77,50 @@ end)
 -- └───────────────────────────────────────────┘
 
 Lib.now(function() require('mini.tabline').setup() end)
+
+-- ┌───────────────────────────────────────────┐
+-- │ mini.sessions                             │
+-- └───────────────────────────────────────────┘
+
+Lib.now(
+  function()
+    require('mini.sessions').setup({
+      autoread = false,
+      autowrite = false,
+      directory = vim.fs.joinpath(vim.fn.stdpath('state'), 'sessions'),
+      file = '',
+      force = {
+        read = false,
+        write = true,
+        delete = false,
+      },
+      verbose = {
+        read = false,
+        write = false,
+        delete = true,
+      },
+    })
+  end
+)
+
+-- ┌───────────────────────────────────────────┐
+-- │ mini.visits                               │
+-- └───────────────────────────────────────────┘
+
+Lib.later(function()
+  require('mini.visits').setup({
+    silent = true,
+    store = {
+      autowrite = true,
+      path = vim.fs.joinpath(vim.fn.stdpath('state'), 'mini-visits-index'),
+    },
+    track = {
+      event = '',
+    },
+  })
+
+  visits.setup()
+end)
 
 -- ┌───────────────────────────────────────────┐
 -- │ mini.extra                                │
@@ -227,8 +280,11 @@ Lib.later(function()
   local mini_pick = require('mini.pick')
 
   mini_pick.setup({ window = { config = win_config } })
+  mini_pick.registry.actions = pickers.actions
   mini_pick.registry.autocmds = pickers.autocmds
   mini_pick.registry.grep_cword = pickers.grep_cword
+  mini_pick.registry.location_list = pickers.location_list
+  mini_pick.registry.quickfix_list = pickers.quickfix_list
 end)
 
 -- ┌───────────────────────────────────────────┐

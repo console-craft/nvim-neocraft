@@ -146,6 +146,394 @@ function M.autocmds()
 end
 
 -- ┌───────────────────────────────────────────┐
+-- │ Actions custom picker                     │
+-- └───────────────────────────────────────────┘
+
+local function action_items()
+  local actions = {
+    {
+      group = 'Buffers',
+      mode = 'n',
+      key = '<C-[>',
+      invoke = "require('neocraft.actions').previous_buffer()",
+      desc = 'Previous buffer',
+      run = function() require('neocraft.actions').previous_buffer() end,
+    },
+    {
+      group = 'Buffers',
+      mode = 'n',
+      key = '<C-]>',
+      invoke = "require('neocraft.actions').next_buffer()",
+      desc = 'Next buffer',
+      run = function() require('neocraft.actions').next_buffer() end,
+    },
+    {
+      group = 'Buffers',
+      mode = 'n',
+      key = '<C-c>',
+      invoke = "require('neocraft.actions').delete_buffer()",
+      desc = 'Delete current buffer',
+      run = function() require('neocraft.actions').delete_buffer() end,
+    },
+    {
+      group = 'Buffers',
+      mode = 'n',
+      key = '<C-n>',
+      invoke = "require('neocraft.actions').new_buffer()",
+      desc = 'New buffer',
+      run = function() require('neocraft.actions').new_buffer() end,
+    },
+    {
+      group = 'Buffers',
+      mode = 'Not set',
+      key = 'Not set',
+      invoke = ':NeocraftBufferDelete',
+      desc = 'Delete current buffer',
+      run = function() require('neocraft.actions').buffer_delete_command() end,
+    },
+    {
+      group = 'Buffers',
+      mode = 'Not set',
+      key = 'Not set',
+      invoke = ':NeocraftBufferWipeout',
+      desc = 'Wipe out current buffer',
+      run = function() require('neocraft.actions').buffer_wipeout_command() end,
+    },
+    {
+      group = 'Pickers',
+      mode = 'n',
+      key = '<C-p>',
+      invoke = "require('neocraft.actions').show_action_picker()",
+      desc = 'Open action picker',
+      run = function() require('neocraft.actions').show_action_picker() end,
+    },
+    {
+      group = 'Editing',
+      mode = 'n',
+      key = '<Esc>',
+      invoke = "require('neocraft.actions').clear_search()",
+      desc = 'Clear search highlight',
+      run = function() require('neocraft.actions').clear_search() end,
+    },
+    {
+      group = 'Editing',
+      mode = 'n',
+      key = '<C-s>',
+      invoke = "require('neocraft.actions').save()",
+      desc = 'Save current file',
+      run = function() require('neocraft.actions').save() end,
+    },
+    {
+      group = 'Editing',
+      mode = 'i,x',
+      key = '<C-s>',
+      invoke = "require('neocraft.actions').save_and_normal_mode()",
+      desc = 'Save and return to Normal mode',
+      run = function() require('neocraft.actions').save_and_normal_mode() end,
+    },
+    {
+      group = 'Files',
+      mode = 'n',
+      key = '<C-x>',
+      invoke = "require('neocraft.plugins.mini').open_files()",
+      desc = 'Toggle file explorer',
+      run = function() require('neocraft.plugins.mini').open_files() end,
+    },
+    {
+      group = 'Terminal',
+      mode = 'n,t',
+      key = '<C-/>',
+      invoke = "require('neocraft.terminal').toggle()",
+      desc = 'Toggle floating terminal',
+      run = function() require('neocraft.terminal').toggle() end,
+    },
+    {
+      group = 'Git',
+      mode = 'n',
+      key = '<C-Space>',
+      invoke = "require('neocraft.plugins.git').toggle_overlay()",
+      desc = 'Toggle diff overlay',
+      run = function() require('neocraft.plugins.git').toggle_overlay() end,
+    },
+    {
+      group = 'Git',
+      mode = 'n,x',
+      key = 'go',
+      invoke = "require('neocraft.plugins.git').open()",
+      desc = 'Git open item at cursor',
+      run = function() require('neocraft.plugins.git').open() end,
+    },
+    {
+      group = 'Editing',
+      mode = 'n,x',
+      key = '<M-j>',
+      invoke = "require('neocraft.actions').move_lines_down()",
+      desc = 'Move line or selection down',
+      run = function() require('neocraft.actions').move_lines_down() end,
+    },
+    {
+      group = 'Editing',
+      mode = 'n,x',
+      key = '<M-k>',
+      invoke = "require('neocraft.actions').move_lines_up()",
+      desc = 'Move line or selection up',
+      run = function() require('neocraft.actions').move_lines_up() end,
+    },
+    {
+      group = 'Editing',
+      mode = 'n',
+      key = '<M-h>',
+      invoke = "require('neocraft.actions').scroll_view_left()",
+      desc = 'Scroll view left',
+      run = function() require('neocraft.actions').scroll_view_left() end,
+    },
+    {
+      group = 'Editing',
+      mode = 'n',
+      key = '<M-H>',
+      invoke = "require('neocraft.actions').scroll_view_half_left()",
+      desc = 'Scroll view half-screen left',
+      run = function() require('neocraft.actions').scroll_view_half_left() end,
+    },
+    {
+      group = 'Editing',
+      mode = 'i,t,c',
+      key = '<M-h>',
+      invoke = "require('neocraft.actions').move_left()",
+      desc = 'Move left',
+      run = function() require('neocraft.actions').move_left() end,
+    },
+    {
+      group = 'Editing',
+      mode = 'i,t',
+      key = '<M-j>',
+      invoke = "require('neocraft.actions').move_down()",
+      desc = 'Move down',
+      run = function() require('neocraft.actions').move_down() end,
+    },
+    {
+      group = 'Editing',
+      mode = 'i,t',
+      key = '<M-k>',
+      invoke = "require('neocraft.actions').move_up()",
+      desc = 'Move up',
+      run = function() require('neocraft.actions').move_up() end,
+    },
+    {
+      group = 'Editing',
+      mode = 'n',
+      key = '<M-l>',
+      invoke = "require('neocraft.actions').scroll_view_right()",
+      desc = 'Scroll view right',
+      run = function() require('neocraft.actions').scroll_view_right() end,
+    },
+    {
+      group = 'Editing',
+      mode = 'n',
+      key = '<M-L>',
+      invoke = "require('neocraft.actions').scroll_view_half_right()",
+      desc = 'Scroll view half-screen right',
+      run = function() require('neocraft.actions').scroll_view_half_right() end,
+    },
+    {
+      group = 'Editing',
+      mode = 'i,t,c',
+      key = '<M-l>',
+      invoke = "require('neocraft.actions').move_right()",
+      desc = 'Move right',
+      run = function() require('neocraft.actions').move_right() end,
+    },
+    {
+      group = 'Notifications',
+      mode = 'Not set',
+      key = 'Not set',
+      invoke = ':NeocraftNotifications',
+      desc = 'Show notification history',
+      run = function() require('neocraft.actions').show_notifications() end,
+    },
+    {
+      group = 'Notifications',
+      mode = 'Not set',
+      key = 'Not set',
+      invoke = ':NeocraftNotificationsClear',
+      desc = 'Clear visible notifications',
+      run = function() require('neocraft.actions').clear_notifications() end,
+    },
+    {
+      group = 'Plugins',
+      mode = 'Not set',
+      key = 'Not set',
+      invoke = ':NeocraftPack',
+      desc = 'Show vim.pack groups',
+      run = function() require('neocraft.actions').show_pack() end,
+    },
+    {
+      group = 'Session',
+      mode = 'i,n,s,x',
+      key = '<C-S-r>',
+      invoke = "require('neocraft.actions').restart_neovim()",
+      desc = 'Restart Neovim',
+      run = function() require('neocraft.actions').restart_neovim() end,
+    },
+    {
+      group = 'Session',
+      mode = 'n',
+      key = '<C-q>',
+      invoke = "require('neocraft.actions').quit_neovim()",
+      desc = 'Quit Neovim',
+      run = function() require('neocraft.actions').quit_neovim() end,
+    },
+    {
+      group = 'Editing',
+      mode = 't',
+      key = '<Esc><Esc>',
+      invoke = "require('neocraft.actions').exit_terminal_mode()",
+      desc = 'Exit terminal mode',
+      run = function() require('neocraft.actions').exit_terminal_mode() end,
+    },
+    {
+      group = 'Windows',
+      mode = 'n',
+      key = '<C-CR>',
+      invoke = "require('neocraft.actions').toggle_maximized()",
+      desc = 'Toggle maximized window',
+      run = function() require('neocraft.actions').toggle_maximized() end,
+    },
+    {
+      group = 'Windows',
+      mode = 'n,t',
+      key = '<C-h>',
+      invoke = "require('neocraft.actions').focus_left()",
+      desc = 'Focus window to the left',
+      run = function() require('neocraft.actions').focus_left() end,
+    },
+    {
+      group = 'Windows',
+      mode = 'n,t',
+      key = '<C-j>',
+      invoke = "require('neocraft.actions').focus_down()",
+      desc = 'Focus window below',
+      run = function() require('neocraft.actions').focus_down() end,
+    },
+    {
+      group = 'Windows',
+      mode = 'n,t',
+      key = '<C-k>',
+      invoke = "require('neocraft.actions').focus_up()",
+      desc = 'Focus window above',
+      run = function() require('neocraft.actions').focus_up() end,
+    },
+    {
+      group = 'Windows',
+      mode = 'n,t',
+      key = '<C-l>',
+      invoke = "require('neocraft.actions').focus_right()",
+      desc = 'Focus window to the right',
+      run = function() require('neocraft.actions').focus_right() end,
+    },
+    {
+      group = 'Windows',
+      mode = 'n',
+      key = '<C-Left>',
+      invoke = "require('neocraft.actions').resize_left()",
+      desc = 'Decrease window width',
+      run = function() require('neocraft.actions').resize_left() end,
+    },
+    {
+      group = 'Windows',
+      mode = 'n',
+      key = '<C-Down>',
+      invoke = "require('neocraft.actions').resize_down()",
+      desc = 'Decrease window height',
+      run = function() require('neocraft.actions').resize_down() end,
+    },
+    {
+      group = 'Windows',
+      mode = 'n',
+      key = '<C-Up>',
+      invoke = "require('neocraft.actions').resize_up()",
+      desc = 'Increase window height',
+      run = function() require('neocraft.actions').resize_up() end,
+    },
+    {
+      group = 'Windows',
+      mode = 'n',
+      key = '<C-Right>',
+      invoke = "require('neocraft.actions').resize_right()",
+      desc = 'Increase window width',
+      run = function() require('neocraft.actions').resize_right() end,
+    },
+  }
+
+  for _, item in ipairs(actions) do
+    item.group = item.group or 'Other'
+    item.mode = item.mode or 'Not set'
+    item.key = item.key or 'Not set'
+    item.text = string.format(
+      '%-8s │ %-12s │ %-35s │ %-14s │ %s',
+      item.mode,
+      item.key,
+      item.desc,
+      item.group,
+      item.invoke
+    )
+  end
+
+  table.sort(actions, function(a, b)
+    if a.group == b.group then return a.invoke < b.invoke end
+    return a.group < b.group
+  end)
+
+  return actions
+end
+
+local function action_preview(buf_id, item)
+  if type(item) ~= 'table' then return end
+
+  local lines = {
+    'Group: ' .. (item.group or 'Other'),
+    'Mode: ' .. (item.mode or 'Not set'),
+    'Keymap: ' .. (item.key or 'Not set'),
+    'Invoke: ' .. (item.invoke or ''),
+    '',
+    item.desc or '',
+  }
+
+  vim.bo[buf_id].filetype = 'text'
+  vim.api.nvim_buf_set_lines(buf_id, 0, -1, false, lines)
+end
+
+function M.actions()
+  return require('mini.pick').start({
+    source = {
+      items = action_items,
+      name = 'Actions',
+      preview = action_preview,
+      choose = function(item)
+        if type(item) ~= 'table' or type(item.run) ~= 'function' then return end
+        vim.schedule(item.run)
+      end,
+    },
+  })
+end
+
+-- ┌───────────────────────────────────────────┐
+-- │ Quickfix/Location list custom pickers     │
+-- └───────────────────────────────────────────┘
+
+function M.quickfix_list()
+  return mini_api().pick_extra('list', { scope = 'quickfix' }, {
+    source = { name = 'Quickfix List' },
+  })
+end
+
+function M.location_list()
+  return mini_api().pick_extra('list', { scope = 'location' }, {
+    source = { name = 'Location List' },
+  })
+end
+
+-- ┌───────────────────────────────────────────┐
 -- │ Pickers registry custom picker            │
 -- └───────────────────────────────────────────┘
 
@@ -156,10 +544,13 @@ local function registry_picker_names()
 end
 
 local registry_runners = {
+  actions = function() M.actions() end,
   files = function(buf) mini_api().pick_files(buf) end,
   grep = function(buf) mini_api().pick_builtin('grep', nil, { buf = buf }) end,
   grep_cword = function(buf) M.grep_cword(buf) end,
   grep_live = function(buf) mini_api().grep_live(buf) end,
+  location_list = function() M.location_list() end,
+  quickfix_list = function() M.quickfix_list() end,
   resume = function() mini_api().resume_picker() end,
 }
 
