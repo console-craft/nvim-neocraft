@@ -149,6 +149,14 @@ end
 -- │ Actions custom picker                     │
 -- └───────────────────────────────────────────┘
 
+local function feedkeys(keys)
+  return function() vim.api.nvim_feedkeys(vim.keycode(keys), 'm', false) end
+end
+
+local function notify_visual_only(action)
+  return function() vim.notify(action .. ' works from Visual mode only', vim.log.levels.INFO) end
+end
+
 local function action_items()
   local actions = {
     {
@@ -211,9 +219,9 @@ local function action_items()
       group = 'Editing',
       mode = 'n',
       key = '<Esc>',
-      invoke = "require('neocraft.actions').clear_search()",
-      desc = 'Clear search highlight',
-      run = function() require('neocraft.actions').clear_search() end,
+      invoke = "require('neocraft.actions').clear_on_escape()",
+      desc = 'Multiple clearing actions',
+      run = function() require('neocraft.actions').clear_on_escape() end,
     },
     {
       group = 'Editing',
@@ -240,14 +248,6 @@ local function action_items()
       run = function() require('neocraft.plugins.mini').open_files() end,
     },
     {
-      group = 'Terminal',
-      mode = 'n,t',
-      key = '<C-/>',
-      invoke = "require('neocraft.terminal').toggle()",
-      desc = 'Toggle floating terminal',
-      run = function() require('neocraft.terminal').toggle() end,
-    },
-    {
       group = 'Git',
       mode = 'n',
       key = '<C-Space>',
@@ -262,6 +262,86 @@ local function action_items()
       invoke = "require('neocraft.plugins.git').open()",
       desc = 'Git open item at cursor',
       run = function() require('neocraft.plugins.git').open() end,
+    },
+    {
+      group = 'Git',
+      mode = 'n',
+      key = '[h',
+      invoke = "require('neocraft.plugins.git').goto_hunk('prev')",
+      desc = 'Previous git hunk',
+      run = feedkeys('[h'),
+    },
+    {
+      group = 'Git',
+      mode = 'n',
+      key = ']h',
+      invoke = "require('neocraft.plugins.git').goto_hunk('next')",
+      desc = 'Next git hunk',
+      run = feedkeys(']h'),
+    },
+    {
+      group = 'Git',
+      mode = 'n',
+      key = '[H',
+      invoke = "require('neocraft.plugins.git').goto_hunk('first')",
+      desc = 'First git hunk',
+      run = feedkeys('[H'),
+    },
+    {
+      group = 'Git',
+      mode = 'n',
+      key = ']H',
+      invoke = "require('neocraft.plugins.git').goto_hunk('last')",
+      desc = 'Last git hunk',
+      run = feedkeys(']H'),
+    },
+    {
+      group = 'Git',
+      mode = 'n',
+      key = '[g',
+      invoke = "require('neocraft.plugins.git').prev_pending_file(false)",
+      desc = 'Previous unstaged git file',
+      run = feedkeys('[g'),
+    },
+    {
+      group = 'Git',
+      mode = 'n',
+      key = ']g',
+      invoke = "require('neocraft.plugins.git').next_pending_file(false)",
+      desc = 'Next unstaged git file',
+      run = feedkeys(']g'),
+    },
+    {
+      group = 'Git',
+      mode = 'n',
+      key = '[G',
+      invoke = "require('neocraft.plugins.git').prev_pending_file(true)",
+      desc = 'Previous staged git file',
+      run = feedkeys('[G'),
+    },
+    {
+      group = 'Git',
+      mode = 'n',
+      key = ']G',
+      invoke = "require('neocraft.plugins.git').next_pending_file(true)",
+      desc = 'Next staged git file',
+      run = feedkeys(']G'),
+    },
+    {
+      group = 'Git',
+      mode = 'n,o,x',
+      key = 'gh',
+      invoke = 'gh',
+      desc = 'Apply hunk',
+      run = feedkeys('gh'),
+    },
+    {
+      group = 'Git',
+      mode = 'n,o,x',
+      key = 'gH',
+      invoke = 'gH',
+      desc = 'Reset hunk',
+      run = feedkeys('gH'),
     },
     {
       group = 'Editing',
@@ -322,6 +402,78 @@ local function action_items()
     {
       group = 'Editing',
       mode = 'n',
+      key = '[p',
+      invoke = '[p',
+      desc = 'Paste above',
+      run = feedkeys('[p'),
+    },
+    {
+      group = 'Editing',
+      mode = 'n',
+      key = ']p',
+      invoke = ']p',
+      desc = 'Paste below',
+      run = feedkeys(']p'),
+    },
+    {
+      group = 'Editing',
+      mode = 'n',
+      key = 'gV',
+      invoke = 'gV',
+      desc = 'Reselect last paste/change',
+      run = feedkeys('gV'),
+    },
+    {
+      group = 'Editing',
+      mode = 'n',
+      key = 's',
+      invoke = 's',
+      desc = 'Start jump',
+      run = feedkeys('s'),
+    },
+    {
+      group = 'Editing',
+      mode = 'n,x',
+      key = 'ys',
+      invoke = 'ys',
+      desc = 'Add surrounding',
+      run = feedkeys('ys'),
+    },
+    {
+      group = 'Editing',
+      mode = 'n',
+      key = 'ds',
+      invoke = 'ds',
+      desc = 'Delete surrounding',
+      run = feedkeys('ds'),
+    },
+    {
+      group = 'Editing',
+      mode = 'n',
+      key = 'cs',
+      invoke = 'cs',
+      desc = 'Change surrounding',
+      run = feedkeys('cs'),
+    },
+    {
+      group = 'Editing',
+      mode = 'n',
+      key = 'yss',
+      invoke = 'yss',
+      desc = 'Add surrounding to line',
+      run = feedkeys('yss'),
+    },
+    {
+      group = 'Editing',
+      mode = 'x',
+      key = 'S',
+      invoke = 'S',
+      desc = 'Surround selection',
+      run = notify_visual_only('S'),
+    },
+    {
+      group = 'Editing',
+      mode = 'n',
       key = '<M-l>',
       invoke = "require('neocraft.actions').scroll_view_right()",
       desc = 'Scroll view right',
@@ -342,30 +494,6 @@ local function action_items()
       invoke = "require('neocraft.actions').move_right()",
       desc = 'Move right',
       run = function() require('neocraft.actions').move_right() end,
-    },
-    {
-      group = 'Notifications',
-      mode = 'Not set',
-      key = 'Not set',
-      invoke = ':NeocraftNotifications',
-      desc = 'Show notification history',
-      run = function() require('neocraft.actions').show_notifications() end,
-    },
-    {
-      group = 'Notifications',
-      mode = 'Not set',
-      key = 'Not set',
-      invoke = ':NeocraftNotificationsClear',
-      desc = 'Clear visible notifications',
-      run = function() require('neocraft.actions').clear_notifications() end,
-    },
-    {
-      group = 'Plugins',
-      mode = 'Not set',
-      key = 'Not set',
-      invoke = ':NeocraftPack',
-      desc = 'Show vim.pack groups',
-      run = function() require('neocraft.actions').show_pack() end,
     },
     {
       group = 'Session',
@@ -390,6 +518,22 @@ local function action_items()
       invoke = "require('neocraft.actions').exit_terminal_mode()",
       desc = 'Exit terminal mode',
       run = function() require('neocraft.actions').exit_terminal_mode() end,
+    },
+    {
+      group = 'Windows',
+      mode = 'n',
+      key = '[<Tab>',
+      invoke = '[<Tab>',
+      desc = 'Previous tab',
+      run = feedkeys('[<Tab>'),
+    },
+    {
+      group = 'Windows',
+      mode = 'n',
+      key = ']<Tab>',
+      invoke = ']<Tab>',
+      desc = 'Next tab',
+      run = feedkeys(']<Tab>'),
     },
     {
       group = 'Windows',
@@ -430,6 +574,30 @@ local function action_items()
       invoke = "require('neocraft.actions').focus_right()",
       desc = 'Focus window to the right',
       run = function() require('neocraft.actions').focus_right() end,
+    },
+    {
+      group = 'Windows',
+      mode = 'n,t',
+      key = '<C-/>',
+      invoke = "require('neocraft.terminal').toggle()",
+      desc = 'Toggle floating terminal',
+      run = function() require('neocraft.terminal').toggle() end,
+    },
+    {
+      group = 'Coding',
+      mode = 'n',
+      key = '[e',
+      invoke = '[e',
+      desc = 'Jump to previous error',
+      run = feedkeys('[e'),
+    },
+    {
+      group = 'Coding',
+      mode = 'n',
+      key = ']e',
+      invoke = ']e',
+      desc = 'Jump to next error',
+      run = feedkeys(']e'),
     },
     {
       group = 'Windows',
@@ -530,6 +698,272 @@ end
 function M.location_list()
   return mini_api().pick_extra('list', { scope = 'location' }, {
     source = { name = 'Location List' },
+  })
+end
+
+-- ┌───────────────────────────────────────────┐
+-- │ Worktrees custom pickers                  │
+-- └───────────────────────────────────────────┘
+
+local function worktree_base_preview(buf_id, item)
+  if type(item) ~= 'table' then return end
+
+  local lines = {
+    'Kind: ' .. (item.kind or 'unknown'),
+    'Value: ' .. (item.value or ''),
+    '',
+    item.text or '',
+  }
+
+  if item.kind == 'custom' then
+    lines = {
+      'Kind: custom',
+      '',
+      'Pick this item to type any commit-ish manually.',
+    }
+  end
+
+  vim.bo[buf_id].filetype = 'text'
+  vim.api.nvim_buf_set_lines(buf_id, 0, -1, false, lines)
+end
+
+function M.worktree_bases(on_choice)
+  local worktrees = require('neocraft.worktrees')
+  local items, err = worktrees.base_items()
+
+  if not items then
+    vim.notify(err or 'Could not load worktree bases', vim.log.levels.WARN)
+    return
+  end
+
+  return require('mini.pick').start({
+    source = {
+      items = items,
+      name = 'Worktree Bases',
+      preview = worktree_base_preview,
+      choose = function(item)
+        if type(item) ~= 'table' or type(on_choice) ~= 'function' then return end
+
+        if item.kind == 'custom' then
+          vim.schedule(function()
+            vim.ui.input({ prompt = 'Custom base commit-ish: ' }, function(input)
+              if input == nil then return end
+
+              local value = vim.trim(input)
+              if value == '' then return end
+
+              on_choice({ kind = 'custom', label = value, text = value, value = value })
+            end)
+          end)
+          return
+        end
+
+        vim.schedule(function() on_choice(item) end)
+      end,
+    },
+  })
+end
+
+local function worktree_preview(buf_id, item)
+  if type(item) ~= 'table' then return end
+
+  local lines = {
+    'Name: ' .. (item.name or ''),
+    'Path: ' .. (item.path or ''),
+    'Branch: ' .. (item.branch or ''),
+    'HEAD: ' .. (item.head or ''),
+    'Main repo: ' .. tostring(item.is_main == true),
+    'Current: ' .. tostring(item.is_current == true),
+  }
+
+  if item.locked then table.insert(lines, 'Locked: ' .. tostring(item.locked)) end
+  if item.prunable then table.insert(lines, 'Prunable: ' .. tostring(item.prunable)) end
+
+  vim.bo[buf_id].filetype = 'text'
+  vim.api.nvim_buf_set_lines(buf_id, 0, -1, false, lines)
+end
+
+function M.worktrees(on_choice, opts)
+  opts = vim.tbl_extend('force', {
+    empty_message = 'No worktrees found for this project',
+    exclude_current = false,
+    include_main = true,
+    name = 'Worktrees',
+  }, opts or {})
+
+  local worktrees = require('neocraft.worktrees')
+  local items, err = worktrees.list()
+
+  if not items then
+    vim.notify(err or 'Could not load worktrees', vim.log.levels.WARN)
+    return
+  end
+
+  items = vim.tbl_filter(function(item)
+    if not opts.include_main and item.is_main then return false end
+    if opts.exclude_current and item.is_current then return false end
+    return true
+  end, items)
+
+  if #items == 0 then
+    vim.notify(opts.empty_message, vim.log.levels.INFO)
+    return
+  end
+
+  return require('mini.pick').start({
+    source = {
+      items = items,
+      name = opts.name,
+      preview = worktree_preview,
+      choose = function(item)
+        if type(item) ~= 'table' or type(on_choice) ~= 'function' then return end
+        vim.schedule(function() on_choice(item) end)
+      end,
+    },
+  })
+end
+
+local function read_preview_chunk(path)
+  local fd = vim.uv.fs_open(path, 'r', 438)
+  if fd == nil then return nil end
+
+  local chunk = vim.uv.fs_read(fd, 4096, 0)
+  vim.uv.fs_close(fd)
+
+  return chunk
+end
+
+local function worktree_file_preview(buf_id, item)
+  if type(item) ~= 'table' then return end
+
+  local lines = {
+    'Path: ' .. (item.relative_path or ''),
+    'Absolute: ' .. (item.path or ''),
+  }
+
+  local stat = item.path and vim.uv.fs_stat(item.path) or nil
+  if stat and stat.size then table.insert(lines, 'Size: ' .. stat.size .. ' bytes') end
+
+  local chunk = item.path and read_preview_chunk(item.path) or nil
+  if chunk == nil then
+    table.insert(lines, '')
+    table.insert(lines, 'Preview unavailable')
+  elseif chunk:find('\0', 1, true) then
+    table.insert(lines, '')
+    table.insert(lines, 'Binary file preview unavailable')
+  else
+    table.insert(lines, '')
+    table.insert(lines, 'Preview:')
+
+    local preview = vim.split(chunk, '\n', { plain = true })
+    for i = 1, math.min(#preview, 80) do
+      table.insert(lines, preview[i])
+    end
+  end
+
+  vim.bo[buf_id].filetype = 'text'
+  vim.api.nvim_buf_set_lines(buf_id, 0, -1, false, lines)
+end
+
+function M.worktree_files(on_choice)
+  local worktrees = require('neocraft.worktrees')
+  local items, err = worktrees.project_file_items()
+
+  if not items then
+    vim.notify(err or 'Could not load project files', vim.log.levels.WARN)
+    return
+  end
+  if #items == 0 then
+    vim.notify('No files available to copy from this project', vim.log.levels.INFO)
+    return
+  end
+
+  return require('mini.pick').start({
+    source = {
+      items = items,
+      name = 'Worktree Files | <C-x> = select item | <M-CR> = confirm selected',
+      preview = worktree_file_preview,
+      choose = function(item)
+        if type(item) ~= 'table' or type(on_choice) ~= 'function' then return end
+        vim.schedule(function() on_choice({ item }) end)
+      end,
+      choose_marked = function(items_marked)
+        if type(on_choice) ~= 'function' or #items_marked == 0 then return end
+        vim.schedule(function() on_choice(items_marked) end)
+      end,
+    },
+  })
+end
+
+-- ┌───────────────────────────────────────────┐
+-- │ Git branches custom pickers               │
+-- └───────────────────────────────────────────┘
+
+local function git_branch_preview(buf_id, item)
+  if type(item) ~= 'table' then return end
+
+  local lines = {
+    'Branch: ' .. (item.branch or ''),
+    'Sha: ' .. (item.sha or ''),
+    '',
+    item.subject or '',
+  }
+
+  if item.ref then table.insert(lines, 2, 'Ref: ' .. item.ref) end
+
+  vim.bo[buf_id].filetype = 'text'
+  vim.api.nvim_buf_set_lines(buf_id, 0, -1, false, lines)
+end
+
+function M.git_local_branches(on_choice)
+  local git = require('neocraft.plugins.git')
+  local items, err = git.local_branch_items()
+
+  if not items then
+    vim.notify(err or 'Could not load local branches', vim.log.levels.WARN)
+    return
+  end
+  if #items == 0 then
+    vim.notify('No deletable local branches available', vim.log.levels.INFO)
+    return
+  end
+
+  return require('mini.pick').start({
+    source = {
+      items = items,
+      name = 'Local Branches',
+      preview = git_branch_preview,
+      choose = function(item)
+        if type(item) ~= 'table' or type(on_choice) ~= 'function' then return end
+        vim.schedule(function() on_choice(item) end)
+      end,
+    },
+  })
+end
+
+function M.git_remote_branches(on_choice)
+  local git = require('neocraft.plugins.git')
+  local items, err = git.remote_branch_items()
+
+  if not items then
+    vim.notify(err or 'Could not load remote branches', vim.log.levels.WARN)
+    return
+  end
+  if #items == 0 then
+    vim.notify('No deletable remote branches available', vim.log.levels.INFO)
+    return
+  end
+
+  return require('mini.pick').start({
+    source = {
+      items = items,
+      name = 'Remote Branches',
+      preview = git_branch_preview,
+      choose = function(item)
+        if type(item) ~= 'table' or type(on_choice) ~= 'function' then return end
+        vim.schedule(function() on_choice(item) end)
+      end,
+    },
   })
 end
 

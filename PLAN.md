@@ -39,6 +39,7 @@
 - `lua/neocraft/pickers.lua`
 - `lua/neocraft/visits.lua`
 - `lua/neocraft/terminal.lua`
+- `lua/neocraft/worktrees.lua`
 - `lua/neocraft/core/helpers.lua`
 - `lua/neocraft/core/pack.lua`
 - `lua/neocraft/core/root.lua`
@@ -224,9 +225,15 @@
   - earned namespaces for:
     - buffer
     - tabs
+    - lists
+  - let `<Leader>g` grow nested workflow groups only when they earn it:
+    - bisect
+    - cherry-pick
+    - rebase
+    - destructive remove/reset flows
+    - worktrees
   - reserve future meanings without binding them until the backing behavior exists:
     - code
-    - git/hunks
     - focus list / "x marks the spot"
 - Use `mini.clue` for discoverability rather than a heavier external helper.
 - Keep mappings explicit, mnemonic, and command-first when an action is rare.
@@ -237,10 +244,8 @@
   - `S` in Visual mode to surround the current selection
   - keep surround search deterministic with `search_method = "cover"`
 - Reserve plain `s` for `mini.jump2d` so it acts as the primary in-window jump motion.
-- Keep rare/admin actions out of leader space for now:
-  - notifications stay command-first
-  - `vim.pack` introspection stays command-first
-  - surface those later through the action picker instead of an `other` namespace
+- Keep the action picker as the home for global non-`<Leader>` mappings that are useful but easy to forget.
+- Notifications history and `vim.pack` introspection can later graduate into a dedicated list namespace instead of an `other` bucket.
 - Reserve `<Leader><Leader>` as the premium entrypoint for a future curated focus list once Stage 7 adds the backing store.
 - Add motion-oriented extras here once the keymap language is settled:
   - `mini.jump2d`
@@ -255,6 +260,7 @@
   - `mini.sessions`
   - `mini.visits`
   - local `root` helper
+  - local `worktrees` helper
 - Stage 7 should stay root-aware without becoming cwd-driven:
   - detect project roots explicitly
   - scope pickers, sessions, visits, terminal startup, and file explorer fallbacks from the root helper
@@ -267,6 +273,10 @@
   - `<Leader>p` choose from all registered pickers
   - `<C-p>` curated action picker for hidden keymaps and command-first workflows
   - `<C-x>` file explorer, opening around the current file when possible and falling back to project root otherwise
+- Make `mini.files` feel like a real project explorer without growing a wrapper abstraction:
+  - keep `<CR>` as the primary open action in the target window
+  - add `<C-s>` / `<C-v>` for split opens that keep the explorer open
+  - add `g.` for hidden files, `gy` / `gY` for project-relative and absolute path copy, and `gx` for OS open
 - Use `mini.visits` to back the curated working-set / focus-list idea:
   - keep the list file-based and let Neovim's last-position restore handle intra-file return points
   - track visits per detected project root instead of per cwd
@@ -275,10 +285,23 @@
   - `<Leader>xa` add current file to the focus list
   - `<Leader>xc` remove current file from the focus list
   - `<Leader>xd` clear the current project focus list
-- Land the first `<Leader>g` Git mappings here as `mini.git` and `mini.diff` become available.
+- Land the first full `<Leader>g` workflow families here as `mini.git` and `mini.diff` become available.
 - Keep `go` as the contextual Git "open at cursor" action backed by `mini.git.show_at_cursor()`.
-- Keep `mini.diff` built-in hunk motions/operators as the primary low-level hunk language instead of duplicating them in leader mappings.
-- Keep notifications and `:NeocraftPack` command-first, but surface them through the action picker.
+- Keep `mini.diff` hunk operators as the primary low-level hunk language, but wrap hunk motions on `[h` / `]h` / `[H` / `]H` to recenter and show transient hunk counts.
+- Add pending-file motions on `[g` / `]g` for unstaged files and `[G` / `]G` for staged files.
+- Let Git workflows grow into explicit subgroups when they prove useful:
+  - `<Leader>gb` for bisect
+  - `<Leader>gp` for cherry-pick
+  - `<Leader>gr` for rebase
+  - `<Leader>gR` for destructive branch/reset cleanup with stronger confirmations
+- Add centralized worktree management as an editor-local workflow:
+  - store worktrees under `~/.worktrees/<project-slug>/...`, derived from the main repo path rather than scattered next to repos
+  - `<Leader>gwa` create from a picked base and prompt for a worktree name
+  - `<Leader>gwr` remove a picked worktree
+  - `<Leader>gwy` yank a picked worktree path
+  - `<Leader>gwc` copy selected project files into a picked worktree for ignored/local-only files like `.env`
+  - `<Leader>gwp` prune stale worktree metadata
+- Promote notifications history and `vim.pack` introspection into the list namespace on `<Leader>ln` and `<Leader>lp`, while still surfacing global non-`<Leader>` actions through `<C-p>`.
 - Add a lightweight floating terminal entrypoint on `<C-/>` / `<C-_>`; reuse one floating terminal buffer globally, start it in detected project root, and avoid a full terminal namespace unless it proves necessary.
 - Add session behavior tied to detected project roots, with storage in XDG state paths.
 - Make sessions automatic for bare `nvim` startup and normal exit:
@@ -397,10 +420,12 @@
 - Roots: helper only, no cwd auto-switch
 - Sessions: global XDG state storage by project-root mapping
 - Search/files: `mini.pick` + `mini.files`
-- Git: `mini.git` + `mini.diff`
+- Git: `mini.git` + `mini.diff`, with explicit bisect/cherry-pick/rebase/remove subgroups
+- Worktrees: centralized under `~/.worktrees` with project-derived slugs and picker-driven add/remove/yank/copy-file flows
 - Focus list: `mini.visits` with root-scoped file labels
 - Terminal: one reusable floating terminal on `<C-/>`
-- Hidden actions: curated picker on `<C-p>`
+- Hidden actions: curated picker on `<C-p>` for global non-`<Leader>` mappings
+- Lists: `<Leader>ln` for notifications history, `<Leader>lp` for `vim.pack` summary
 - Discoverability: `mini.clue`
 - UI/status: mini modules first
 - External tools: auto-installed by Mason from declared lists

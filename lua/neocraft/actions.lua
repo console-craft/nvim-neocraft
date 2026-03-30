@@ -51,7 +51,10 @@ end
 
 function M.exit_terminal_mode() input_key('<C-\\><C-n>') end
 
-function M.clear_search() vim.cmd.nohlsearch() end
+function M.clear_on_escape()
+  vim.cmd.nohlsearch()
+  require('mini.notify').clear()
+end
 
 function M.show_action_picker() require('neocraft.pickers').actions() end
 
@@ -189,11 +192,5 @@ function M.quit_neovim()
   local choice = vim.fn.confirm(msg, '&Yes\n&No\n&Cancel', 2)
   if choice == 1 then vim.api.nvim_cmd({ cmd = 'qall', bang = true }, {}) end
 end
-
-function M.show_notifications() require('mini.notify').show_history() end
-
-function M.clear_notifications() require('mini.notify').clear() end
-
-function M.show_pack() vim.cmd('NeocraftPack') end
 
 return M

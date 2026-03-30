@@ -22,11 +22,16 @@ end
 local function nmap_leader(lhs, rhs, desc, opts) nmap('<leader>' .. lhs, rhs, desc, opts) end
 
 local leader_group_clues = {
-  { mode = 'n', keys = '<Leader>b', desc = '+Buffers' },
+  { mode = 'n', keys = '<Leader>b', desc = '+Buffer' },
   { mode = 'n', keys = '<Leader>g', desc = '+Git' },
-  { mode = 'n', keys = '<Leader>l', desc = '+Lists' },
+  { mode = 'n', keys = '<Leader>gR', desc = '+Remove' },
+  { mode = 'n', keys = '<Leader>gb', desc = '+Bisect' },
+  { mode = 'n', keys = '<Leader>gp', desc = '+Cherry-pick' },
+  { mode = 'n', keys = '<Leader>gr', desc = '+Rebase' },
+  { mode = 'n', keys = '<Leader>gw', desc = '+Worktrees' },
+  { mode = 'n', keys = '<Leader>l', desc = '+List' },
   { mode = 'n', keys = '<Leader>x', desc = '+Focus' },
-  { mode = 'n', keys = '<Leader><Tab>', desc = '+Tabs' },
+  { mode = 'n', keys = '<Leader><Tab>', desc = '+Tab' },
 }
 
 local function navigate(direction, cli_direction)
@@ -221,6 +226,14 @@ nmap('<C-/>', function() require('neocraft.terminal').toggle() end, 'Toggle floa
 nmap('<C-_>', function() require('neocraft.terminal').toggle() end, 'Toggle floating terminal')
 nmap('<C-x>', function() require('neocraft.plugins.mini').open_files() end, 'Toggle file explorer')
 nmap('<C-Space>', function() require('neocraft.plugins.git').toggle_overlay() end, 'Toggle diff overlay')
+nmap('[h', function() require('neocraft.plugins.git').goto_hunk('prev') end, 'Prev Git hunk')
+nmap(']h', function() require('neocraft.plugins.git').goto_hunk('next') end, 'Next Git hunk')
+nmap('[H', function() require('neocraft.plugins.git').goto_hunk('first') end, 'First Git hunk')
+nmap(']H', function() require('neocraft.plugins.git').goto_hunk('last') end, 'Last Git hunk')
+nmap('[g', function() require('neocraft.plugins.git').prev_pending_file(false) end, 'Prev unstaged Git file')
+nmap(']g', function() require('neocraft.plugins.git').next_pending_file(false) end, 'Next unstaged Git file')
+nmap('[G', function() require('neocraft.plugins.git').prev_pending_file(true) end, 'Prev staged Git file')
+nmap(']G', function() require('neocraft.plugins.git').next_pending_file(true) end, 'Next staged Git file')
 
 nmap('[<Tab>', '<Cmd>tabprevious<CR>', 'Previous tab')
 nmap(']<Tab>', '<Cmd>tabnext<CR>', 'Next tab')
@@ -245,7 +258,7 @@ nmap_leader('/', function() require('neocraft.plugins.mini').grep_live() end, 'G
 nmap_leader('*', function() require('neocraft.plugins.mini').grep_cword() end, 'Grep word')
 nmap_leader('r', function() require('neocraft.plugins.mini').resume_picker() end, 'Resume picker')
 nmap_leader('p', function() require('neocraft.plugins.mini').pick_registry() end, 'Pickers')
-nmap_leader('y', [[:silent keepjumps %yank<CR>]], 'Copy file contents')
+nmap_leader('y', [[:silent keepjumps %yank<CR>]], 'Copy content')
 nmap_leader('s', '<C-w>s', 'Split below')
 nmap_leader('v', '<C-w>v', 'Split right')
 nmap_leader('q', '<C-w>c', 'Close window')
@@ -269,25 +282,65 @@ nmap('go', function() require('neocraft.plugins.git').open() end, 'Git open')
 xmap('go', function() require('neocraft.plugins.git').open() end, 'Git open')
 nmap_leader('ga', function() require('neocraft.plugins.git').add_file() end, 'Add buffer')
 nmap_leader('gA', function() require('neocraft.plugins.git').add_all() end, 'Add all')
-nmap_leader('gb', function() require('neocraft.plugins.git').blame() end, 'Blame')
+nmap_leader('gB', function() require('neocraft.plugins.git').blame() end, 'Blame')
+nmap_leader('gbS', function() require('neocraft.plugins.git').bisect_start() end, 'Start bisect')
+nmap_leader('gbg', function() require('neocraft.plugins.git').bisect_good() end, 'Mark current commit good')
+nmap_leader('gbb', function() require('neocraft.plugins.git').bisect_bad() end, 'Mark current commit bad')
+nmap_leader('gbs', function() require('neocraft.plugins.git').bisect_skip() end, 'Skip current commit')
+nmap_leader('gbr', function() require('neocraft.plugins.git').bisect_reset() end, 'Reset bisect')
+nmap_leader('gbl', function() require('neocraft.plugins.git').bisect_log() end, 'Log bisect')
+nmap_leader('gbv', function() require('neocraft.plugins.git').bisect_visualize() end, 'Visualize bisect')
 nmap_leader('gc', function() require('neocraft.plugins.git').commit() end, 'Commit')
 nmap_leader('gC', function() require('neocraft.plugins.git').commit_amend() end, 'Commit amend')
 nmap_leader('gd', function() require('neocraft.plugins.git').diff() end, 'Diff')
 nmap_leader('gD', function() require('neocraft.plugins.git').diff_staged() end, 'Diff staged')
 nmap_leader('gl', function() require('neocraft.plugins.git').log_repo() end, 'Log')
 nmap_leader('gL', function() require('neocraft.plugins.git').log_buffer() end, 'Log buffer')
+nmap_leader('gRb', function() require('neocraft.plugins.git').delete_local_branch_prompt() end, 'Delete local branch')
+nmap_leader('gRB', function() require('neocraft.plugins.git').delete_remote_branch_prompt() end, 'Delete remote branch')
+nmap_leader(
+  'gRc',
+  function() require('neocraft.plugins.git').reset_latest_commit_mixed() end,
+  'Remove latest commit (keep changes)'
+)
+nmap_leader(
+  'gRC',
+  function() require('neocraft.plugins.git').reset_latest_commit_hard() end,
+  'Remove latest commit (discard changes)'
+)
+nmap_leader('gRp', function() require('neocraft.plugins.git').prune_branches() end, 'Prune stale branches')
+nmap_leader(
+  'gRr',
+  function() require('neocraft.plugins.git').reset_and_clean() end,
+  'Reset changes and clean untracked'
+)
+nmap_leader('gwa', function() require('neocraft.worktrees').add_prompt() end, 'Add worktree')
+nmap_leader('gwc', function() require('neocraft.worktrees').copy_files_prompt() end, 'Copy files to worktree')
+nmap_leader('gwp', function() require('neocraft.worktrees').prune() end, 'Prune worktrees')
+nmap_leader('gwr', function() require('neocraft.worktrees').remove_prompt() end, 'Remove worktree')
+nmap_leader('gwy', function() require('neocraft.worktrees').yank_path_prompt() end, 'Yank worktree path')
+nmap_leader('gpa', function() require('neocraft.plugins.git').cherry_pick_abort() end, 'Abort cherry-pick')
+nmap_leader('gpc', function() require('neocraft.plugins.git').cherry_pick_continue() end, 'Continue cherry-pick')
+nmap_leader('gpp', function() require('neocraft.plugins.git').cherry_pick() end, 'Pick commits')
+nmap_leader('gps', function() require('neocraft.plugins.git').cherry_pick_skip() end, 'Skip cherry-pick step')
+nmap_leader('gra', function() require('neocraft.plugins.git').rebase_abort() end, 'Abort rebase')
+nmap_leader('grc', function() require('neocraft.plugins.git').rebase_continue() end, 'Continue rebase')
+nmap_leader('grr', function() require('neocraft.plugins.git').rebase_interactive() end, 'Rebase interactive')
+nmap_leader('grs', function() require('neocraft.plugins.git').rebase_skip() end, 'Skip rebase step')
 nmap_leader('gs', function() require('neocraft.plugins.git').status() end, 'Status')
 
 -- Lists namespace
 nmap_leader('lc', function()
   local success, err = pcall(vim.cmd.copen)
   if not success and err then vim.notify(err, vim.log.levels.ERROR) end
-end, 'Quickfix list')
+end, 'Quickfix')
+nmap_leader('ln', function() require('mini.notify').show_history() end, 'Notifications')
 nmap_leader('ll', function()
   vim.diagnostic.setloclist()
   local success, err = pcall(vim.cmd.lopen)
   if not success and err then vim.notify(err, vim.log.levels.ERROR) end
-end, 'Location list')
+end, 'Location')
+nmap_leader('lp', function() require('neocraft.core.pack').show_pack() end, 'Plugins')
 
 -- Focus namespace
 nmap_leader('<Leader>', function() require('neocraft.visits').pick_focus() end, 'Focus list')
@@ -314,7 +367,7 @@ map(
 )
 nmap('<C-q>', function() require('neocraft.actions').quit_neovim() end, 'Quit Neovim')
 
-nmap('<Esc>', '<Cmd>nohlsearch<CR>', 'Clear search highlight')
+nmap('<Esc>', function() require('neocraft.actions').clear_on_escape() end, 'Run multiple clearing actions')
 
 nmap('<C-h>', function() navigate('h', 'Left') end, 'Focus window to the left')
 tmap('<C-h>', function() navigate('h', 'Left') end, 'Focus window to the left')

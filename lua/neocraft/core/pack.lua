@@ -63,6 +63,28 @@ local function sorted_keys(tbl)
   return keys
 end
 
+local function pack_buf_id()
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.api.nvim_buf_is_valid(buf) and vim.bo[buf].filetype == 'neocraft-pack' then return buf end
+  end
+
+  local buf = vim.api.nvim_create_buf(true, true)
+  vim.api.nvim_buf_set_name(buf, 'neocraft://pack/summary')
+  vim.bo[buf].bufhidden = 'hide'
+  vim.bo[buf].buflisted = false
+  vim.bo[buf].filetype = 'neocraft-pack'
+  vim.bo[buf].modifiable = false
+  vim.bo[buf].swapfile = false
+
+  return buf
+end
+
+local function refresh_pack_buffer(buf)
+  vim.bo[buf].modifiable = true
+  vim.api.nvim_buf_set_lines(buf, 0, -1, true, M.summary_lines())
+  vim.bo[buf].modifiable = false
+end
+
 function M.summary_lines()
   local lines = {
     'Neocraft vim.pack',
@@ -90,17 +112,13 @@ function M.summary_lines()
   return lines
 end
 
-vim.api.nvim_create_user_command(
-  'NeocraftPack',
-  function()
-    vim.notify(table.concat(M.summary_lines(), '\n'), vim.log.levels.INFO, {
-      title = 'Neocraft Pack',
-    })
-  end,
-  {
-    desc = 'Show Neocraft vim.pack groups',
-  }
-)
+function M.show_pack()
+  local buf = pack_buf_id()
+
+  refresh_pack_buffer(buf)
+  vim.api.nvim_win_set_buf(0, buf)
+  vim.api.nvim_win_set_cursor(0, { 1, 0 })
+end
 
 -- ┌───────────────────────────────────────────┐
 -- │ Misc                                      │

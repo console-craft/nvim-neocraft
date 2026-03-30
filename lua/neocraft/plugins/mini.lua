@@ -45,22 +45,6 @@ Lib.now(function()
   })
 end)
 
-vim.api.nvim_create_user_command(
-  'NeocraftNotifications',
-  function() require('neocraft.actions').show_notifications() end,
-  {
-    desc = 'Show Neocraft notification history',
-  }
-)
-
-vim.api.nvim_create_user_command(
-  'NeocraftNotificationsClear',
-  function() require('neocraft.actions').clear_notifications() end,
-  {
-    desc = 'Clear Neocraft visible notifications',
-  }
-)
-
 -- ┌───────────────────────────────────────────┐
 -- │ mini.statusline                           │
 -- └───────────────────────────────────────────┘
@@ -136,6 +120,8 @@ local function resolve_buf(buf) return (buf == nil or buf == 0) and vim.api.nvim
 
 local function realpath(path) return root.realpath(path) end
 
+local show_dotfiles = true
+
 local function path_type(path)
   local stat = path and vim.uv.fs_stat(path) or nil
   return stat and stat.type or nil
@@ -160,6 +146,114 @@ local function files_anchor(buf)
   return fallback
 end
 
+local function current_fs_entry() return require('mini.files').get_fs_entry() end
+
+local function current_entry_path()
+  local entry = current_fs_entry()
+  return entry and entry.path or nil
+end
+
+local function current_entry_relative_path()
+  local path = current_entry_path()
+  if path == nil then return nil end
+
+  local project_root = root.get()
+  if project_root == nil then return path end
+
+  return vim.fs.relpath(project_root, path) or path
+end
+
+local function yank_to_clipboard(value, message)
+  if value == nil or value == '' then
+    vim.notify('No path selected in file explorer', vim.log.levels.WARN)
+    return
+  end
+
+  vim.fn.setreg('+', value)
+  vim.api.nvim_echo({ { message, 'Normal' } }, false, {})
+end
+
+local function copy_entry_relative_path()
+  yank_to_clipboard(current_entry_relative_path(), 'Yanked relative path to clipboard')
+end
+
+local function copy_entry_absolute_path() yank_to_clipboard(current_entry_path(), 'Yanked absolute path to clipboard') end
+
+local function open_entry_with_system()
+  local path = current_entry_path()
+  if path == nil then
+    vim.notify('No path selected in file explorer', vim.log.levels.WARN)
+    return
+  end
+
+  vim.ui.open(path)
+end
+
+local function toggle_dotfiles()
+  show_dotfiles = not show_dotfiles
+
+  local filter = show_dotfiles and function() return true end
+    or function(fs_entry) return not vim.startswith(fs_entry.name, '.') end
+
+  require('mini.files').refresh({ content = { filter = filter } })
+end
+
+local function split_entry(direction)
+  local entry = current_fs_entry()
+  if entry == nil then
+    vim.notify('No path selected in file explorer', vim.log.levels.WARN)
+    return
+  end
+
+  if entry.fs_type ~= 'file' then
+    vim.notify('Split open works on files only', vim.log.levels.INFO)
+    return
+  end
+
+  local mini_files = require('mini.files')
+  local state = mini_files.get_explorer_state()
+  local target_window = state and state.target_window or nil
+  if not (target_window and vim.api.nvim_win_is_valid(target_window)) then return end
+
+  local new_target_window
+  vim.api.nvim_win_call(target_window, function()
+    vim.cmd(direction .. ' split')
+    new_target_window = vim.api.nvim_get_current_win()
+  end)
+
+  if new_target_window == nil then return end
+
+  mini_files.set_target_window(new_target_window)
+  mini_files.go_in({ close_on_file = false })
+end
+
+local function map_files_buffer(buf_id)
+  vim.keymap.set('n', '<C-s>', function() split_entry('belowright horizontal') end, {
+    buffer = buf_id,
+    desc = 'Open file in horizontal split',
+  })
+  vim.keymap.set('n', '<C-v>', function() split_entry('belowright vertical') end, {
+    buffer = buf_id,
+    desc = 'Open file in vertical split',
+  })
+  vim.keymap.set('n', 'g.', toggle_dotfiles, {
+    buffer = buf_id,
+    desc = 'Toggle hidden files',
+  })
+  vim.keymap.set('n', 'gy', copy_entry_relative_path, {
+    buffer = buf_id,
+    desc = 'Copy relative path',
+  })
+  vim.keymap.set('n', 'gY', copy_entry_absolute_path, {
+    buffer = buf_id,
+    desc = 'Copy absolute path',
+  })
+  vim.keymap.set('n', 'gx', open_entry_with_system, {
+    buffer = buf_id,
+    desc = 'Open with system handler',
+  })
+end
+
 function M.open_files(buf)
   local mini_files = require('mini.files')
 
@@ -176,25 +270,30 @@ function M.open_files(buf)
   mini_files.set_bookmark('~', project_root, { desc = 'Project root' })
 end
 
-Lib.later(
-  function()
-    require('mini.files').setup({
-      windows = {
-        preview = false,
-        width_nofocus = 30,
-        width_focus = 30,
-        width_preview = 30,
-      },
-      mappings = {
-        go_in_plus = '<CR>',
-        close = '<Esc>',
-      },
-      options = {
-        use_as_default_explorer = true,
-      },
-    })
-  end
-)
+Lib.now(function()
+  require('mini.files').setup({
+    windows = {
+      preview = false,
+      width_nofocus = 30,
+      width_focus = 30,
+      width_preview = 30,
+    },
+    mappings = {
+      go_in_plus = '<CR>',
+      close = '<Esc>',
+    },
+    options = {
+      use_as_default_explorer = true,
+    },
+  })
+
+  Lib.autocmd('User', {
+    group = Lib.augroup('mini_files'),
+    pattern = 'MiniFilesBufferCreate',
+    desc = 'Add explorer-local mappings for mini.files',
+    callback = function(args) map_files_buffer(args.data.buf_id) end,
+  })
+end)
 
 -- ┌───────────────────────────────────────────┐
 -- │ mini.pick                                 │
