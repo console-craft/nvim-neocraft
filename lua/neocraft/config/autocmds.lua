@@ -1,3 +1,19 @@
+vim.filetype.add({
+  filename = {
+    ['.env'] = 'sh',
+  },
+  pattern = {
+    ['%.env%.[%w_.-]+'] = { 'sh', { priority = 10 } },
+    ['docker%-compose%.ya?ml'] = 'yaml.docker-compose',
+    ['compose%.ya?ml'] = 'yaml.docker-compose',
+    ['.*%.component%.html'] = 'htmlangular',
+    ['.*%.container%.html'] = 'htmlangular',
+  },
+  extension = {
+    mdc = 'markdown',
+  },
+})
+
 local group = Lib.augroup('config')
 
 Lib.autocmd('TextYankPost', {

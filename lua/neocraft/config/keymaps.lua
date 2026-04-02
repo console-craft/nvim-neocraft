@@ -106,7 +106,6 @@ local function toggle_diagnostics()
   show_toggle_state(get_toggle_text('diagnostic', not enabled))
 end
 
--- TODO: revisit at later stage
 local function toggle_folds()
   local opening = vim.wo.foldlevel == 0
 
@@ -259,6 +258,7 @@ nmap_leader('*', function() require('neocraft.plugins.mini').grep_cword() end, '
 nmap_leader('r', function() require('neocraft.plugins.mini').resume_picker() end, 'Resume picker')
 nmap_leader('p', function() require('neocraft.plugins.mini').pick_registry() end, 'Pickers')
 nmap_leader('y', [[:silent keepjumps %yank<CR>]], 'Copy content')
+nmap_leader('z', 'zA', 'Toggle current fold')
 nmap_leader('s', '<C-w>s', 'Split below')
 nmap_leader('v', '<C-w>v', 'Split right')
 nmap_leader('q', '<C-w>c', 'Close window')

@@ -50,6 +50,11 @@ opt.listchars                    = {                                -- Whitespac
 opt.fillchars                    = {                                -- UI filler characters
   eob = ' ',
 }
+opt.foldenable                   = true                             -- Keep folding available without starting collapsed
+opt.foldcolumn                   = '0'                              -- Don't reserve a dedicated fold column
+opt.foldlevel                    = 99                               -- Keep folds open until explicitly closed
+opt.foldlevelstart               = 99                               -- Start windows with folds open
+opt.foldtext                     = ''                               -- Render folds with highlighted chunks and a count
 opt.wrap                         = false                            -- Disable visual line wrapping by default
 opt.linebreak                    = true                             -- Wrap at word boundaries when wrapping is enabled
 opt.breakindent                  = true                             -- Indent wrapped lines to match line start

@@ -174,6 +174,8 @@
 - Defer option families that depend on later stages:
   - revisit completion-related options in Stage 11 (`complete`, `completeopt`, `completetimeout`)
   - revisit fold defaults in Stage 8 once tree-sitter and textobjects are in place
+    - current landing: keep `foldenable = true`, `foldcolumn = "0"`, `foldlevel = 99`, `foldlevelstart = 99`, `foldtext = ""`
+    - use tree-sitter foldexpr when `folds` queries exist and fall back to `foldmethod = "indent"` otherwise
   - revisit session-related options in Stage 7 (`sessionoptions`)
   - revisit formatting-specific options in Stage 12 (`formatexpr`)
   - revisit statusline/message UI options in Stage 5 or Stage 14 (`laststatus`, `statuscolumn`, `shortmess`)
@@ -314,11 +316,28 @@
 
 ### Stage 8: Treesitter
 
-- Add `nvim-treesitter`.
-- Keep parser installation explicit and limited at first.
-- Use it for highlighting/indent/textobject support where it clearly improves things.
-- Avoid turning parser management into a giant implicit system.
-- Revisit `mini.indentscope` here once tree-sitter, folding, and code-structure UX are in place.
+- Landed shape:
+  - use `nvim-treesitter` from the `main` branch
+  - keep parser installation explicit in `plugins/treesitter.lua`, but allow the curated list to grow beyond the minimal baseline when it reflects real use
+  - include `nvim-treesitter-textobjects` to support query-backed textobjects already used by `mini.ai`
+  - include `nvim-treesitter-context` now, with the preferred old-config behavior: `trim_scope = "inner"`, `mode = "topline"`, `max_lines = 2`
+- Attach tree-sitter explicitly on `FileType`:
+  - resolve the effective parser language from the buffer filetype
+  - call `vim.treesitter.start()` only when a parser exists
+  - avoid turning parser/query management into a giant implicit system
+- Enable structure-aware features only when queries exist:
+  - use tree-sitter folds when `folds` queries exist
+  - use tree-sitter `indentexpr` when `indents` queries exist
+  - fall back to indent folding when tree-sitter folds are unavailable
+- Keep folded lines rendered normally for now with `foldtext = ""`; richer fold summaries or gutter counts are intentionally deferred to avoid extra UI machinery.
+- Add a small set of filetype aliases here because they directly improve parser/query coverage:
+  - `.env` and `.env.*` -> `sh`
+  - `docker-compose*.yml|yaml` and `compose*.yml|yaml` -> `yaml.docker-compose`
+  - `*.component.html` and `*.container.html` -> `htmlangular`
+  - `.mdc` -> `markdown`
+- Revisit `mini.indentscope` here once tree-sitter, folding, and code-structure UX are in place:
+  - enable it with a subtle `│` guide and `try_as_border = true`
+  - disable it in prose buffers and special buffers rather than carrying a large exclusion matrix
 
 ### Stage 9: Native LSP + Mason
 
