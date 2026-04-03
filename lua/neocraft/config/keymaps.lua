@@ -93,11 +93,6 @@ local function toggle_conceallevel()
   show_toggle_state('Conceal Level: ' .. vim.wo.conceallevel)
 end
 
-local function toggle_hlsearch()
-  vim.v.hlsearch = 1 - vim.v.hlsearch
-  show_toggle_state(get_toggle_text('hlsearch', vim.v.hlsearch == 1))
-end
-
 local function toggle_diagnostics()
   local bufnr = vim.api.nvim_get_current_buf()
   local enabled = vim.diagnostic.is_enabled({ bufnr = bufnr })
@@ -237,13 +232,14 @@ nmap(']G', function() require('neocraft.plugins.git').next_pending_file(true) en
 nmap('[<Tab>', '<Cmd>tabprevious<CR>', 'Previous tab')
 nmap(']<Tab>', '<Cmd>tabnext<CR>', 'Next tab')
 
--- TODO: (in the future) - format (\f), inlay hints (\h). code lens (\l), minimap (\m),
+-- TODO: (in the future) - format (\f), minimap (\m)
 nmap('\\b', toggle_background, 'Toggle background')
 nmap('\\c', function() toggle_window_option('cursorline') end, 'Toggle cursorline')
 nmap('\\`', toggle_conceallevel, 'Toggle conceallevel')
 nmap('\\d', toggle_diagnostics, 'Toggle diagnostics')
-nmap('\\h', toggle_hlsearch, 'Toggle search highlight')
+nmap('\\h', function() require('neocraft.plugins.lsp').toggle_inlay_hints() end, 'Toggle inlay hints')
 nmap('\\i', function() toggle_global_option('ignorecase') end, 'Toggle ignorecase')
+nmap('\\l', function() require('neocraft.plugins.lsp').toggle_codelens() end, 'Toggle code lens')
 nmap('\\n', function() toggle_window_option('number') end, 'Toggle line numbers')
 nmap('\\r', function() toggle_window_option('relativenumber') end, 'Toggle relative numbers')
 nmap('\\s', function() toggle_window_option('spell') end, 'Toggle spell checking')
@@ -356,6 +352,8 @@ nmap(']p', '<Cmd>exe "iput "  . v:register<CR>', 'Paste Below')
 nmap('gV', '`[v`]', 'Reselect last paste/change')
 xmap('p', 'P', 'Paste without yanking replaced selection')
 
+nmap('gd', '<C-]>', 'Goto definition or tag')
+
 nmap('<C-s>', '<Cmd>silent! update | redraw<CR>', 'Save')
 imap('<C-s>', '<Esc><Cmd>silent! update | redraw<CR>', 'Save and go to Normal mode')
 xmap('<C-s>', '<Esc><Cmd>silent! update | redraw<CR>', 'Save and go to Normal mode')
@@ -405,6 +403,9 @@ nmap(
 
 nmap(']e', goto_diagnostic(true, 'ERROR'), 'Next diagnostic error')
 nmap('[e', goto_diagnostic(false, 'ERROR'), 'Prev diagnostic error')
+
+nmap(']w', goto_diagnostic(true, 'WARN'), 'Next diagnostic warning')
+nmap('[w', goto_diagnostic(false, 'WARN'), 'Prev diagnostic warning')
 
 tmap('<Esc><Esc>', '<C-\\><C-n>', 'Exit terminal mode')
 tmap('<C-/>', function() require('neocraft.terminal').toggle() end, 'Toggle floating terminal')

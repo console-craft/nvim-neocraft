@@ -51,9 +51,20 @@ end
 
 function M.exit_terminal_mode() input_key('<C-\\><C-n>') end
 
+local function clear_notifications_on_escape()
+  local ok, notify = pcall(require, 'mini.notify')
+  if not ok then return end
+
+  for id, notif in pairs(notify.get_all()) do
+    if notif.ts_remove == nil and not (type(notif.data) == 'table' and notif.data.source == 'lsp_progress') then
+      notify.remove(id)
+    end
+  end
+end
+
 function M.clear_on_escape()
   vim.cmd.nohlsearch()
-  require('mini.notify').clear()
+  clear_notifications_on_escape()
 end
 
 function M.show_action_picker() require('neocraft.pickers').actions() end

@@ -351,13 +351,36 @@
   - a central list of LSP servers
   - a central list of external tools to auto-install
   - a Kickstart-style `LspAttach` callback for buffer-local mappings and capability-based features
-- Use `<Leader>c` as the shared code namespace for LSP-native actions.
-- Start with hover, rename, code action, definitions/references, diagnostics, and formatting.
+- Installation shape landed as:
+  - `mason.nvim` is explicitly set up
+  - `mason-tool-installer.nvim` is the single `ensure_installed` authority for both servers and external tools
+  - `mason-lspconfig.nvim` stays installed as the Mason <-> `nvim-lspconfig` bridge, but does not own setup or auto-enable behavior
+  - use Neovim-native `vim.lsp.config()` / `vim.lsp.enable()` patterns
+- Keep server root detection on `nvim-lspconfig` defaults for now; do not globally override `root_dir` from the Neocraft root helper.
+- Use a hybrid LSP keymap model instead of forcing everything under `<Leader>c`:
+  - keep useful native defaults like `K`, `gra`, and `grn`
+  - keep `gd` global and tag-aware (`<C-]>`) rather than buffer-local LSP-only
+  - upgrade `grr`, `gri`, `grt`, and `gO` with `mini.extra` pickers on `LspAttach`
+  - add `gW` for workspace symbols on `LspAttach`
+  - remap Insert-mode signature help to `<C-k>` on `LspAttach`
+- Use `<Leader>c` as the small code namespace for the actions that do not map as cleanly to native motions:
+  - `<Leader>cd` line diagnostics float
+  - `<Leader>cf` format current buffer
+  - `<Leader>ci` LSP info
+- Add a buffer-local `mini.clue` `+Code` group during `LspAttach` and refresh clue triggers after attaching.
+- Surface the main coding motions/actions in the curated action picker (`<C-p>`) under a `Coding` group so the less-obvious LSP flows stay discoverable.
+- Default LSP visuals landed as:
+  - enable inlay hints on `LspAttach` when the attached client supports them, using a small `vim.defer_fn(..., 0)` delay so hints actually appear reliably
+  - enable code lens on `LspAttach` when supported
+  - expose buffer-local toggles on `\h` for inlay hints and `\l` for code lens
 - Revisit `mini.files` file operations here: when files are renamed or moved through `mini.files`, notify supporting LSP clients with `workspace/willRenameFiles` / `workspace/didRenameFiles` so servers can update imports and related references.
 - Keep that integration LSP-owned and explicit in `plugins/lsp.lua`, not embedded as a bigger `mini.files` abstraction.
+- Land the `mini.files` rename bridge as a pragmatic public-API integration:
+  - listen to `MiniFilesActionRename` and `MiniFilesActionMove`
+  - notify only clients whose roots/workspaces actually cover the moved path
+  - send `workspace/willRenameFiles` and `workspace/didRenameFiles` from the LSP side after the file operation succeeds, accepting that `willRenameFiles` is necessarily late when driven by `mini.files` public events
 - If tests or debug workflows are later added, fit them under `<Leader>c` only when they prove common enough.
-- After adding buffer-local code mappings, refresh `mini.clue` triggers for those buffers during `LspAttach` if needed.
-- Use Neovim-native `vim.lsp.config()` / `vim.lsp.enable()` patterns.
+- Keep a local `:LspInfo` user command alias to `:checkhealth vim.lsp`, because Neovim `0.12` already owns the built-in `:lsp` command family and `nvim-lspconfig` no longer guarantees its old helper commands.
 
 ### Stage 10: Server-Specific LSP Files
 

@@ -63,7 +63,7 @@ opt.colorcolumn                  = '120'                            -- Use a 120
 opt.pumheight                    = 10                               -- Keep completion popups compact
 opt.pummaxwidth                  = 100                              -- Make popup menu not too wide
 opt.pumborder                    = 'single'                         -- Add a border to popup menus
-opt.winborder                    = 'single'                         -- Use a single border for floating windows
+opt.winborder                    = 'rounded'                        -- Use a rounded border for floating windows
 opt.pumblend                     = 10                               -- Make builtin completion menus slightly transparent
 opt.winblend                     = 10                               -- Make floating windows slightly transparent
 
