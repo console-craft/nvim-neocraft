@@ -3,7 +3,7 @@ description: Run quality gates in a dedicated subagent
 agent: verify
 ---
 
-Use the `check` skill and follow it exactly.
+Use the `check` skill and follow it exactly. The repo verification entrypoint is `./scripts/checks.sh`.
 
 Workflow:
 
@@ -15,4 +15,3 @@ Workflow:
    - what you changed (high level)
    - final status (pass/fail)
    - include `git diff --stat` and any important hunks
-

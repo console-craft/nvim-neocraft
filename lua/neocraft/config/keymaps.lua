@@ -55,10 +55,10 @@ local function navigate(direction, cli_direction)
 end
 
 local function goto_diagnostic(next, severity)
-  local go = next and vim.diagnostic.goto_next or vim.diagnostic.goto_prev
+  local count = next and 1 or -1
   local level = severity and vim.diagnostic.severity[severity] or nil
 
-  return function() go({ severity = level }) end
+  return function() vim.diagnostic.jump({ count = count, severity = level }) end
 end
 
 -- Toggles
@@ -68,8 +68,11 @@ local function show_toggle_state(text) vim.api.nvim_echo({ { text, 'Normal' } },
 local function get_toggle_text(name, enabled) return (enabled and 'Enabled: ' or 'Disabled: ') .. name end
 
 local function toggle_window_option(name)
-  vim.wo[name] = not vim.wo[name]
-  show_toggle_state(get_toggle_text(name, vim.wo[name]))
+  local enabled = vim.api.nvim_get_option_value(name, { scope = 'local', win = 0 }) == true
+  local toggled = not enabled
+
+  vim.api.nvim_set_option_value(name, toggled, { scope = 'local', win = 0 })
+  show_toggle_state(get_toggle_text(name, toggled))
 end
 
 local function toggle_global_option(name)
@@ -130,7 +133,7 @@ local function reload_buffer()
   for _, c in ipairs(vim.lsp.get_clients({ bufnr = bufnr })) do
     local name = (c.name or ''):lower()
     if name ~= 'copilot' and name ~= 'copilot_ls' then
-      c.stop(true) -- force stop; they'll reattach on BufRead/FileType via your setup
+      c:stop(true) -- force stop; they'll reattach on BufRead/FileType via your setup
     end
   end
 

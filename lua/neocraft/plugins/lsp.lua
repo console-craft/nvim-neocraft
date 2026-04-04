@@ -16,6 +16,7 @@ M.servers = {
 }
 
 M.tools = {
+  'luacheck',
   'stylua',
   'shfmt',
 }

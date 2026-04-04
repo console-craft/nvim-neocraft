@@ -809,10 +809,11 @@ end
 
 function M.worktree_bases(on_choice)
   local worktrees = require('neocraft.worktrees')
-  local items, err = worktrees.base_items()
+  local items, info_or_err = worktrees.base_items()
 
   if not items then
-    vim.notify(err or 'Could not load worktree bases', vim.log.levels.WARN)
+    local message = type(info_or_err) == 'string' and info_or_err or 'Could not load worktree bases'
+    vim.notify(message, vim.log.levels.WARN)
     return
   end
 
@@ -947,10 +948,11 @@ end
 
 function M.worktree_files(on_choice)
   local worktrees = require('neocraft.worktrees')
-  local items, err = worktrees.project_file_items()
+  local items, info_or_err = worktrees.project_file_items()
 
   if not items then
-    vim.notify(err or 'Could not load project files', vim.log.levels.WARN)
+    local message = type(info_or_err) == 'string' and info_or_err or 'Could not load project files'
+    vim.notify(message, vim.log.levels.WARN)
     return
   end
   if #items == 0 then

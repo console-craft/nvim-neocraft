@@ -16,14 +16,17 @@ local function is_running(buf)
   return type(job) == 'number' and vim.fn.jobwait({ job }, 0)[1] == -1
 end
 
+---@return integer
 local function ensure_buf()
-  if state.buf and vim.api.nvim_buf_is_valid(state.buf) and is_running(state.buf) then return state.buf end
+  local buf = state.buf
+  if type(buf) == 'number' and vim.api.nvim_buf_is_valid(buf) and is_running(buf) then return buf end
 
-  state.buf = vim.api.nvim_create_buf(false, true)
-  vim.bo[state.buf].bufhidden = 'hide'
-  vim.bo[state.buf].buflisted = false
-  vim.bo[state.buf].swapfile = false
-  return state.buf
+  buf = vim.api.nvim_create_buf(false, true)
+  state.buf = buf
+  vim.bo[buf].bufhidden = 'hide'
+  vim.bo[buf].buflisted = false
+  vim.bo[buf].swapfile = false
+  return buf
 end
 
 local function win_config()
@@ -49,7 +52,7 @@ end
 local function start_job(buf)
   local cwd = root.get()
 
-  vim.api.nvim_buf_call(buf, function() vim.fn.termopen(vim.o.shell, { cwd = cwd }) end)
+  vim.api.nvim_buf_call(buf, function() vim.fn.jobstart(vim.o.shell, { cwd = cwd, term = true }) end)
 
   vim.bo[buf].bufhidden = 'hide'
   vim.bo[buf].buflisted = false

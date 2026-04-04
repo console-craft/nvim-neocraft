@@ -77,19 +77,7 @@ local function parse_worktrees(output, info)
   return items
 end
 
-local function run_system(cmd, opts)
-  local proc = vim.system(cmd, opts or {})
-  local result = proc:wait()
-
-  if type(result) == 'table' then return result end
-
-  return {
-    code = result,
-    signal = proc.signal or 0,
-    stdout = proc.stdout or '',
-    stderr = proc.stderr or '',
-  }
-end
+local function run_system(cmd, opts) return vim.system(cmd, opts or {}):wait() end
 
 local function run_git(args, opts)
   opts = opts or {}

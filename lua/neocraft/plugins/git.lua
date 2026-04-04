@@ -24,7 +24,9 @@ end
 local function save_buffer(buf)
   buf = resolve_buf(buf)
 
-  return vim.api.nvim_buf_call(buf, function() return pcall(vim.cmd, 'silent update') end)
+  return vim.api.nvim_buf_call(buf, function()
+    return pcall(function() vim.cmd('silent update') end)
+  end)
 end
 
 function M.add_file()
@@ -204,19 +206,7 @@ local function branch_item_text(name, sha, subject, extra)
   return string.format('%-24s %-10s %s%s', name, sha or '-', subject or '', suffix)
 end
 
-local function run_system(cmd, opts)
-  local proc = vim.system(cmd, opts or {})
-  local result = proc:wait()
-
-  if type(result) == 'table' then return result end
-
-  return {
-    code = result,
-    signal = proc.signal or 0,
-    stdout = proc.stdout or '',
-    stderr = proc.stderr or '',
-  }
-end
+local function run_system(cmd, opts) return vim.system(cmd, opts or {}):wait() end
 
 local function checked_out_branches(repo_root)
   local result = run_system({ 'git', 'worktree', 'list', '--porcelain' }, {

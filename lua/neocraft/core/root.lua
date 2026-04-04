@@ -15,7 +15,12 @@ function M.realpath(path)
   return vim.fs.normalize(vim.uv.fs_realpath(path) or path)
 end
 
-function M.cwd() return M.realpath(vim.uv.cwd()) or vim.fs.normalize(vim.uv.cwd()) end
+function M.cwd()
+  local cwd = vim.uv.cwd()
+  if cwd == nil or cwd == '' then return vim.fs.normalize(vim.fn.getcwd()) end
+
+  return M.realpath(cwd) or vim.fs.normalize(cwd)
+end
 
 function M.bufpath(buf)
   buf = (buf == nil or buf == 0) and vim.api.nvim_get_current_buf() or buf
@@ -57,7 +62,8 @@ M.detectors.lsp = function(buf)
 
   return vim.tbl_filter(function(path)
     local normalized = M.realpath(path)
-    return normalized and is_ancestor(normalized, bufpath)
+    if normalized == nil then return false end
+    return is_ancestor(normalized, bufpath)
   end, roots)
 end
 
