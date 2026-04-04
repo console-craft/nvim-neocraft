@@ -10,6 +10,9 @@ M.servers = {
   lua_ls = {},
   jsonls = {},
   yamlls = {},
+  gh_actions_ls = {},
+  dockerls = {},
+  docker_compose_language_service = {},
   taplo = {},
   bashls = {},
   marksman = {},
@@ -30,6 +33,7 @@ pack.add('lsp', {
   { src = 'https://github.com/mason-org/mason-lspconfig.nvim' },
   { src = 'https://github.com/WhoIsSethDaniel/mason-tool-installer.nvim' },
   { src = 'https://github.com/neovim/nvim-lspconfig' },
+  { src = 'https://github.com/b0o/SchemaStore.nvim' },
 })
 
 -- ┌───────────────────────────────────────────┐
@@ -187,6 +191,23 @@ end
 
 local function format_buffer(bufnr) return vim.lsp.buf.format({ bufnr = bufnr }) end
 
+local function show_attached_clients(bufnr)
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
+
+  local clients = vim.lsp.get_clients({ bufnr = bufnr })
+  if vim.tbl_isempty(clients) then
+    vim.notify('No LSP clients attached to the current buffer', vim.log.levels.WARN)
+    return
+  end
+
+  local names = vim.tbl_map(function(client) return client.name end, clients)
+  table.sort(names)
+
+  vim.notify(table.concat(names, '\n'), vim.log.levels.INFO, {
+    title = 'Attached LSP Clients',
+  })
+end
+
 local function lsp_picker(scope)
   return function() require('mini.extra').pickers.lsp({ scope = scope }) end
 end
@@ -209,6 +230,16 @@ end
 if vim.fn.exists(':LspInfo') ~= 2 then
   vim.api.nvim_create_user_command('LspInfo', 'checkhealth vim.lsp', {
     desc = 'Alias to `:checkhealth vim.lsp`',
+  })
+end
+
+if vim.fn.exists(':LspAttached') ~= 2 then
+  vim.api.nvim_create_user_command('LspAttached', function(opts)
+    local bufnr = opts.args ~= '' and tonumber(opts.args) or vim.api.nvim_get_current_buf()
+    show_attached_clients(bufnr)
+  end, {
+    desc = 'Show LSP clients attached to the current buffer',
+    nargs = '?',
   })
 end
 
@@ -256,6 +287,8 @@ Lib.autocmd('LspAttach', {
     end
 
     map('n', '<Leader>cd', vim.diagnostic.open_float, 'Line diagnostics')
+
+    map('n', '<Leader>ca', function() show_attached_clients(bufnr) end, 'Attached LSP clients')
 
     map('n', '<Leader>ci', '<Cmd>LspInfo<CR>', 'LSP info')
 

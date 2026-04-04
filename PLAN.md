@@ -50,9 +50,11 @@
 - `lua/neocraft/plugins/format.lua`
 - `lua/neocraft/plugins/git.lua`
 - `after/lsp/*.lua`
+- `after/ftplugin/*.lua`
+- `scripts/checks.sh`
+- `scripts/live_luals.lua`
 - Optional later:
   - `lua/neocraft/lang/*.lua`
-  - `after/ftplugin/*.lua`
   - `snippets/` and `after/snippets/`
 
 ## Architecture Rules
@@ -179,8 +181,10 @@
   - revisit session-related options in Stage 7 (`sessionoptions`)
   - revisit formatting-specific options in Stage 12 (`formatexpr`)
   - revisit statusline/message UI options in Stage 5 or Stage 14 (`laststatus`, `statuscolumn`, `shortmess`)
-  - revisit taste-based defaults in Stage 14 (`conceallevel`, `smoothscroll`, `mousescroll`)
-  - revisit prose-vs-code width rules once `after/ftplugin/*.lua` is in use: keep global code `colorcolumn = "120"`, but give prose buffers like Markdown/Text a local `textwidth = 80` with `colorcolumn = "+1"`
+  - revisit remaining taste-based defaults in Stage 14 (`smoothscroll`, `mousescroll`)
+  - prose-vs-code defaults landed early:
+    - keep global code/data defaults explicit: `colorcolumn = "120"`, `conceallevel = 0`, `concealcursor = ""`
+    - use `after/ftplugin/*.lua` for prose buffers like Markdown/Text/Git commit messages with `textwidth = 80`, `colorcolumn = "+1"`, `wrap = true`, `linebreak = true`, and local conceal settings
 
 | Option(s)                                                    | MiniMax | LazyVim | Description                                                                             |
 |--------------------------------------------------------------|---------|---------|-----------------------------------------------------------------------------------------|
@@ -364,6 +368,7 @@
   - add `gW` for workspace symbols on `LspAttach`
   - remap Insert-mode signature help to `<C-k>` on `LspAttach`
 - Use `<Leader>c` as the small code namespace for the actions that do not map as cleanly to native motions:
+  - `<Leader>ca` show LSP clients attached to the current buffer
   - `<Leader>cd` line diagnostics float
   - `<Leader>cf` format current buffer
   - `<Leader>ci` LSP info
@@ -381,15 +386,20 @@
   - send `workspace/willRenameFiles` and `workspace/didRenameFiles` from the LSP side after the file operation succeeds, accepting that `willRenameFiles` is necessarily late when driven by `mini.files` public events
 - If tests or debug workflows are later added, fit them under `<Leader>c` only when they prove common enough.
 - Keep a local `:LspInfo` user command alias to `:checkhealth vim.lsp`, because Neovim `0.12` already owns the built-in `:lsp` command family and `nvim-lspconfig` no longer guarantees its old helper commands.
+- Add a local `:LspAttached [bufnr]` command to show clients attached to a specific buffer without scanning full `:checkhealth vim.lsp` output.
 
 ### Stage 10: Server-Specific LSP Files
 
 - Put server-specific details in `after/lsp/*.lua`.
-- Initial likely files:
-  - `after/lsp/lua_ls.lua`
-  - `after/lsp/ts_ls.lua` or whichever TS server is chosen
-  - `after/lsp/pyright.lua` or whichever Python server is chosen
 - Keep `plugins/lsp.lua` generic and shared; keep per-server quirks out of it.
+- Stage 10 landed as:
+  - `after/lsp/lua_ls.lua` with a manual Neovim-aware setup, minimal workspace library wiring, and no `lazydev.nvim`
+  - `after/lsp/yamlls.lua` with `SchemaStore.nvim`, formatting/validation settings, and a detach guard so specialized workflow/compose servers own those YAML subtypes
+  - `after/lsp/jsonls.lua` with `SchemaStore.nvim`-backed schemas and validation
+  - keep specialist-but-generic servers like `gh_actions_ls`, `dockerls`, and `docker_compose_language_service` as plain `{}` entries unless they earn explicit overrides later
+- Intentionally defer JavaScript/TypeScript and Python server selection to Stage 13 language profiles:
+  - TS choice stays open between `ts_ls`, `vtsls`, or another workflow-specific option
+  - Python choice stays open between `pyright`, `basedpyright`, or another workflow-specific option
 
 ### Stage 11: Completion And Snippets
 
@@ -431,6 +441,8 @@
   - reproducible plugin state
   - readable failure points
   - a clear way to understand what tools are expected
+- Land a single repo verification entrypoint in `scripts/checks.sh` that runs `luacheck`, `stylua`, `lua-language-server --check`, and a headless live `lua_ls` parity pass.
+- Keep `scripts/live_luals.lua` as the source of truth for matching live Neovim LuaLS diagnostics when CLI `lua-language-server --check` drifts from editor behavior.
 - Avoid building a framework; just add enough diagnostics to keep the config maintainable.
 - Optional late-stage polish once the main UX is stable:
   - `mini.map` for overview/navigation, after diagnostics and diff integrations are already useful

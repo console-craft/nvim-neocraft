@@ -111,8 +111,8 @@ opt.infercase                    = true                             -- Infer cas
 
 opt.spell                        = true                             -- Enable spelling by default
 opt.spelloptions                 = 'camel'                          -- Treat camelCase word parts as separate words
-opt.conceallevel                 = 3                                -- Hide bold/italic markers in Markdown.
-opt.concealcursor                = "n"                              -- Conceal text in cursorline in normal mode.
+opt.conceallevel                 = 0                                -- Keep code and data buffers fully visible by default.
+opt.concealcursor                = ''                               -- Only conceal in filetypes that opt in locally.
 opt.formatlistpat                = [[^\s*[0-9\-\+\*]\+[\.\)]*\s\+]] -- Recognize numbered and bulleted lists
 
 -- stylua: ignore end

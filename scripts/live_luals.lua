@@ -100,7 +100,7 @@ local function inspect_path(path)
   published[bufnr] = false
 
   local attached = wait_for_client(bufnr, 5000)
-  local received = attached and wait_for_diagnostics(bufnr, 5000) or false
+  local received = attached and wait_for_diagnostics(bufnr, 1000) or false
   local diagnostics = unique_diagnostics(vim.diagnostic.get(bufnr))
 
   return {
