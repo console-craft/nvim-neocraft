@@ -103,6 +103,9 @@ opt.virtualedit                  = 'block'                          -- Allow blo
 -- │ Completions                               │
 -- └───────────────────────────────────────────┘
 
+opt.complete                     = '.,w,b,kspell'                   -- Keep built-in completion sources focused and predictable
+opt.completeopt                  = "menuone,noinsert"               -- Show popup menu even for one entry, without auto-inserting the first item.
+opt.completetimeout              = 100                              -- Limit how long completion waits on slow sources
 opt.infercase                    = true                             -- Infer case in built-in completion
 
 -- ┌───────────────────────────────────────────┐

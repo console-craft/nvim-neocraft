@@ -7,6 +7,7 @@ local M = {}
 -- └───────────────────────────────────────────┘
 
 M.servers = {
+  copilot = {},
   lua_ls = {},
   jsonls = {},
   yamlls = {},
@@ -51,6 +52,10 @@ local function file_operation_capabilities()
   }
 end
 
+local function lsp_capabilities()
+  return vim.tbl_deep_extend('force', file_operation_capabilities(), require('mini.completion').get_lsp_capabilities())
+end
+
 local function server_names() return vim.tbl_keys(M.servers) end
 
 local function ensure_installed() return vim.list_extend(server_names(), vim.deepcopy(M.tools)) end
@@ -72,7 +77,7 @@ Lib.now(function()
   })
 
   vim.lsp.config('*', {
-    capabilities = file_operation_capabilities(),
+    capabilities = lsp_capabilities(),
   })
 
   for _, name in ipairs(server_names()) do
@@ -180,6 +185,47 @@ Lib.autocmd('User', {
 -- │ LSP mappings and hints/lens enabling      │
 -- └───────────────────────────────────────────┘
 
+local Methods = vim.lsp.protocol.Methods
+
+local function any_client_supports_method(bufnr, method)
+  return #vim.lsp.get_clients({ bufnr = bufnr, method = method }) > 0
+end
+
+local function mini_diff_overlay_active(bufnr)
+  local ok, mini_diff = pcall(require, 'mini.diff')
+  if not ok then return false end
+
+  local ok_data, data = pcall(mini_diff.get_buf_data, bufnr)
+  return ok_data and data ~= nil and data.overlay == true
+end
+
+local function annotations_temporarily_disabled(bufnr)
+  return mini_diff_overlay_active(bufnr) or vim.api.nvim_get_mode().mode:match('^i') ~= nil
+end
+
+local function reset_inlay_hints(bufnr)
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
+  if not any_client_supports_method(bufnr, Methods.textDocument_inlayHint) then return end
+
+  local should_enable = vim.b[bufnr].neocraft_inlay_hints_enabled == true
+    and not annotations_temporarily_disabled(bufnr)
+  vim.lsp.inlay_hint.enable(should_enable, { bufnr = bufnr })
+end
+
+local function reset_codelens(bufnr)
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
+  if not any_client_supports_method(bufnr, Methods.textDocument_codeLens) then return end
+
+  local should_enable = vim.b[bufnr].neocraft_codelens_enabled == true and not annotations_temporarily_disabled(bufnr)
+  vim.lsp.codelens.enable(should_enable, { bufnr = bufnr })
+end
+
+function M.reset_buffer_annotations(bufnr)
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
+  reset_inlay_hints(bufnr)
+  reset_codelens(bufnr)
+end
+
 local function refresh_clue_triggers(bufnr)
   local ok, clue = pcall(require, 'mini.clue')
   if not ok then return end
@@ -212,7 +258,40 @@ local function lsp_picker(scope)
   return function() require('mini.extra').pickers.lsp({ scope = scope }) end
 end
 
-local Methods = vim.lsp.protocol.Methods
+local function is_copilot_client(client) return client.name == 'copilot' end
+
+local function inline_completion_visible(bufnr)
+  local ns = vim.api.nvim_get_namespaces()['nvim.lsp.inline_completion']
+  if ns == nil then return false end
+
+  return #vim.api.nvim_buf_get_extmarks(bufnr, ns, 0, -1, { limit = 1 }) > 0
+end
+
+local function inline_completor(bufnr)
+  local _, completor = debug.getupvalue(vim.lsp.inline_completion.get, 1)
+  if type(completor) ~= 'table' or type(completor.active) ~= 'table' then return nil end
+  return completor.active[bufnr]
+end
+
+local function retrigger_inline_completion(bufnr)
+  local completor = inline_completor(bufnr)
+  if completor == nil or type(completor.request) ~= 'function' then return false end
+
+  completor:abort()
+  completor:request(vim.lsp.protocol.InlineCompletionTriggerKind.Invoked)
+  return true
+end
+
+local function trigger_or_cycle_inline_completion(bufnr)
+  return function()
+    if inline_completion_visible(bufnr) then
+      vim.lsp.inline_completion.select({ bufnr = bufnr })
+      return
+    end
+
+    retrigger_inline_completion(bufnr)
+  end
+end
 
 local function add_mini_clue_code_group(bufnr)
   local config = vim.b[bufnr].miniclue_config or {}
@@ -252,10 +331,19 @@ Lib.autocmd('LspAttach', {
     local client = client_id and vim.lsp.get_client_by_id(client_id) or nil
     if not client then return end
 
+    vim.bo[bufnr].omnifunc = 'v:lua.MiniCompletion.completefunc_lsp'
+
     add_mini_clue_code_group(bufnr)
 
     local map = function(mode, lhs, rhs, desc)
       vim.keymap.set(mode, lhs, rhs, { buffer = bufnr, silent = true, desc = desc })
+    end
+
+    if is_copilot_client(client) and client:supports_method(Methods.textDocument_inlineCompletion, bufnr) then
+      vim.lsp.inline_completion.enable(true, { client_id = client.id })
+
+      map('i', '<M-]>', trigger_or_cycle_inline_completion(bufnr), 'Next / Retrigger inline completion')
+      map('i', '<M-[>', function() vim.lsp.inline_completion.select({ count = -1 }) end, 'Previous inline completion')
     end
 
     if client:supports_method(Methods.textDocument_references, bufnr) then
@@ -293,24 +381,52 @@ Lib.autocmd('LspAttach', {
     map('n', '<Leader>ci', '<Cmd>LspInfo<CR>', 'LSP info')
 
     if client:supports_method(Methods.textDocument_inlayHint, bufnr) then
-      vim.defer_fn(function() vim.lsp.inlay_hint.enable(true, { bufnr = bufnr }) end, 0)
+      if vim.b[bufnr].neocraft_inlay_hints_enabled == nil then vim.b[bufnr].neocraft_inlay_hints_enabled = true end
     end
 
     if client:supports_method(Methods.textDocument_codeLens, bufnr) then
-      vim.lsp.codelens.enable(true, { bufnr = bufnr })
+      if vim.b[bufnr].neocraft_codelens_enabled == nil then vim.b[bufnr].neocraft_codelens_enabled = true end
+    end
+
+    if
+      client:supports_method(Methods.textDocument_inlayHint, bufnr)
+      or client:supports_method(Methods.textDocument_codeLens, bufnr)
+    then
+      vim.defer_fn(function()
+        if vim.api.nvim_buf_is_valid(bufnr) then M.reset_buffer_annotations(bufnr) end
+      end, 0)
     end
 
     refresh_clue_triggers(bufnr)
   end,
 })
 
+local function hide_buffer_annotations(bufnr)
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
+
+  if any_client_supports_method(bufnr, Methods.textDocument_inlayHint) then
+    vim.lsp.inlay_hint.enable(false, { bufnr = bufnr })
+  end
+  if any_client_supports_method(bufnr, Methods.textDocument_codeLens) then
+    vim.lsp.codelens.enable(false, { bufnr = bufnr })
+  end
+end
+
+Lib.autocmd('InsertEnter', {
+  group = group,
+  desc = 'Hide annotations while typing',
+  callback = function(args) hide_buffer_annotations(args.buf) end,
+})
+
+Lib.autocmd('InsertLeave', {
+  group = group,
+  desc = 'Restore annotations after Insert mode',
+  callback = function(args) M.reset_buffer_annotations(args.buf) end,
+})
+
 -- ┌───────────────────────────────────────────┐
 -- │ Toggle helpers                            │
 -- └───────────────────────────────────────────┘
-
-local function any_client_supports_method(bufnr, method)
-  return #vim.lsp.get_clients({ bufnr = bufnr, method = method }) > 0
-end
 
 function M.toggle_inlay_hints()
   local bufnr = vim.api.nvim_get_current_buf()
@@ -319,8 +435,9 @@ function M.toggle_inlay_hints()
     return
   end
 
-  local enabled = vim.lsp.inlay_hint.is_enabled({ bufnr = bufnr })
-  vim.lsp.inlay_hint.enable(not enabled, { bufnr = bufnr })
+  local enabled = vim.b[bufnr].neocraft_inlay_hints_enabled == true
+  vim.b[bufnr].neocraft_inlay_hints_enabled = not enabled
+  reset_inlay_hints(bufnr)
   vim.api.nvim_echo({ { (enabled and 'Disabled: ' or 'Enabled: ') .. 'inlay hints', 'Normal' } }, false, {})
 end
 
@@ -331,9 +448,95 @@ function M.toggle_codelens()
     return
   end
 
-  local enabled = vim.lsp.codelens.is_enabled({ bufnr = bufnr })
-  vim.lsp.codelens.enable(not enabled, { bufnr = bufnr })
+  local enabled = vim.b[bufnr].neocraft_codelens_enabled == true
+  vim.b[bufnr].neocraft_codelens_enabled = not enabled
+  reset_codelens(bufnr)
   vim.api.nvim_echo({ { (enabled and 'Disabled: ' or 'Enabled: ') .. 'code lens', 'Normal' } }, false, {})
+end
+
+-- ┌───────────────────────────────────────────┐
+-- │ Copilot commands                          │
+-- └───────────────────────────────────────────┘
+
+local function copilot_client(bufnr) return vim.lsp.get_clients({ bufnr = bufnr or 0, name = 'copilot' })[1] end
+
+local function run_copilot_command(command, bufnr)
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
+
+  if not copilot_client(bufnr) then
+    vim.notify('Copilot is not attached to the current buffer', vim.log.levels.INFO)
+    return
+  end
+
+  local commands = vim.api.nvim_buf_get_commands(bufnr, {})
+  if commands[command] == nil then
+    vim.notify('Copilot command `' .. command .. '` is not available in this buffer', vim.log.levels.WARN)
+    return
+  end
+
+  vim.api.nvim_buf_call(bufnr, function() vim.cmd(command) end)
+end
+
+function M.copilot_sign_in(bufnr) run_copilot_command('LspCopilotSignIn', bufnr) end
+
+function M.copilot_sign_out(bufnr) run_copilot_command('LspCopilotSignOut', bufnr) end
+
+local function first_different_char_index(a, b)
+  local index, length_a, length_b = 1, #a, #b
+  while index <= length_a and index <= length_b and a:sub(index, index) == b:sub(index, index) do
+    index = index + 1
+  end
+  return index
+end
+
+local function parse_visible_inline_text(item)
+  if type(item.insert_text) ~= 'string' then return nil end
+
+  local suggested_lines = vim.split(item.insert_text, '\n', { plain = true })
+  local suggested_insertion_pos = item.range and item.range.start:to_extmark()
+    or vim.pos.cursor(vim.api.nvim_win_get_cursor(0)):to_extmark()
+  local suggested_insertion_row, suggested_insertion_col = unpack(suggested_insertion_pos)
+  local existing_line_text =
+    vim.api.nvim_buf_get_lines(0, suggested_insertion_row, suggested_insertion_row + 1, false)[1]
+
+  if not (existing_line_text and #existing_line_text >= suggested_insertion_col) then return nil end
+
+  local existing_line_text_to_right_of_insertion = existing_line_text:sub(suggested_insertion_col + 1)
+  local insertion_index = first_different_char_index(existing_line_text_to_right_of_insertion, suggested_lines[1])
+
+  local current_cursor_row, current_cursor_col = unpack(vim.pos.cursor(vim.api.nvim_win_get_cursor(0)):to_extmark())
+  local may_have_advanced_index = current_cursor_col - suggested_insertion_col + 1
+  if suggested_insertion_row == current_cursor_row then
+    insertion_index = math.max(insertion_index, may_have_advanced_index)
+  end
+
+  return {
+    append_to_current_line_text = suggested_lines[1]:sub(insertion_index),
+    next_suggested_line_text = suggested_lines[2],
+    existing_line_text = suggested_lines[1]:sub(1, insertion_index - 1),
+  }
+end
+
+local function build_eol_item(item)
+  local parsed = parse_visible_inline_text(item)
+  if parsed == nil then return nil end
+
+  local patched = vim.deepcopy(item)
+  local insert_text = parsed.existing_line_text .. parsed.append_to_current_line_text
+
+  if parsed.next_suggested_line_text ~= nil then
+    insert_text = insert_text .. '\n' .. (parsed.next_suggested_line_text:match('^%s*') or '')
+  end
+
+  patched.insert_text = insert_text
+  return patched
+end
+
+function M.accept_inline_completion_to_eol(bufnr)
+  return vim.lsp.inline_completion.get({
+    bufnr = bufnr,
+    on_accept = build_eol_item,
+  })
 end
 
 return M

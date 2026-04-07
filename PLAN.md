@@ -80,8 +80,9 @@
   - `nvim-treesitter`
 - Completion/snippets baseline:
   - `mini.completion`
-  - `mini.snippets`
-  - `friendly-snippets`
+  - built-in `vim.snippet` for LSP-provided snippet placeholders
+  - native Copilot via `nvim-lspconfig` `copilot` + `vim.lsp.inline_completion`
+  - defer `mini.snippets` / `friendly-snippets` until a clear need appears
 - Git baseline:
   - `mini.git`
   - `mini.diff`
@@ -375,8 +376,8 @@
 - Add a buffer-local `mini.clue` `+Code` group during `LspAttach` and refresh clue triggers after attaching.
 - Surface the main coding motions/actions in the curated action picker (`<C-p>`) under a `Coding` group so the less-obvious LSP flows stay discoverable.
 - Default LSP visuals landed as:
-  - enable inlay hints on `LspAttach` when the attached client supports them, using a small `vim.defer_fn(..., 0)` delay so hints actually appear reliably
-  - enable code lens on `LspAttach` when supported
+  - enable inlay hints on `LspAttach` when supported, but keep a per-buffer desired state and temporarily hide them in Insert mode and while `mini.diff` overlay is active
+  - enable code lens on `LspAttach` when supported, with the same per-buffer desired state and temporary hiding rules as inlay hints
   - expose buffer-local toggles on `\h` for inlay hints and `\l` for code lens
 - Revisit `mini.files` file operations here: when files are renamed or moved through `mini.files`, notify supporting LSP clients with `workspace/willRenameFiles` / `workspace/didRenameFiles` so servers can update imports and related references.
 - Keep that integration LSP-owned and explicit in `plugins/lsp.lua`, not embedded as a bigger `mini.files` abstraction.
@@ -396,6 +397,7 @@
   - `after/lsp/lua_ls.lua` with a manual Neovim-aware setup, minimal workspace library wiring, and no `lazydev.nvim`
   - `after/lsp/yamlls.lua` with `SchemaStore.nvim`, formatting/validation settings, and a detach guard so specialized workflow/compose servers own those YAML subtypes
   - `after/lsp/jsonls.lua` with `SchemaStore.nvim`-backed schemas and validation
+  - `after/lsp/copilot.lua` with a non-`.git` root fallback so native Copilot can work from detected project roots or file directories
   - keep specialist-but-generic servers like `gh_actions_ls`, `dockerls`, and `docker_compose_language_service` as plain `{}` entries unless they earn explicit overrides later
 - Intentionally defer JavaScript/TypeScript and Python server selection to Stage 13 language profiles:
   - TS choice stays open between `ts_ls`, `vtsls`, or another workflow-specific option
@@ -405,13 +407,32 @@
 
 - Configure:
   - `mini.completion`
-  - `mini.snippets`
-  - `friendly-snippets`
+  - built-in `vim.snippet`
+  - native Copilot inline completion through `nvim-lspconfig` `copilot`
 - Make completion feel mini-native and lightweight.
-- Add snippet loading from config paths so personal snippets can later live in:
-  - `snippets/`
-  - `after/snippets/`
-- Keep this intentionally simpler than a `blink.cmp`-style stack unless a clear gap appears later.
+- Stage 11 landed as:
+  - `mini.completion` owns the popup-menu baseline, with `omnifunc` wired on `LspAttach` and `MiniCompletion.get_lsp_capabilities()` merged into the shared LSP capabilities
+  - completion-related options were revisited here: `complete`, `completeopt`, and `completetimeout`
+  - keep the popup-menu language close to built-in completion:
+    - `<C-Space>` triggers completion manually
+    - `<CR>` accepts the selected popup item or inserts a newline
+    - `<C-CR>` closes the popup menu and inserts a newline
+  - use built-in `vim.snippet` only for now:
+    - accept LSP snippet completion items normally
+    - use `<Tab>` / `<S-Tab>` for snippet placeholder jumps
+    - keep `<C-Tab>` as literal tab insertion
+    - defer `mini.snippets` and `friendly-snippets` until snippet-library use proves worthwhile
+  - while snippet placeholders are active, suppress automatic popup completion and Copilot ghost text, but keep manual `<C-Space>` completion available
+  - use native Copilot via `nvim-lspconfig` `copilot` plus `vim.lsp.inline_completion`, instead of a larger Copilot plugin owning the client
+  - Copilot keymaps landed as:
+    - `<Tab>` accepts the full inline suggestion when snippet navigation is not active
+    - `<C-e>` closes the popup menu, or accepts Copilot through the end of the current line and carries indentation onto the next suggested line
+    - `<C-]>` dismisses the current inline suggestion
+    - `<M-]>` cycles to the next Copilot suggestion, or retriggers suggestions when none are visible
+    - `<M-[>` cycles to the previous Copilot suggestion
+  - surface Copilot sign-in/sign-out plus completion/inline-suggestion actions in the `<C-p>` action picker under `Coding`
+  - keep this intentionally simpler than a `blink.cmp`-style stack unless a clear gap appears later
+  - defer NES until the baseline completion/Copilot UX proves worth the extra complexity
 
 ### Stage 12: Formatting
 
@@ -467,8 +488,8 @@
 ## Likely V1 Defaults
 
 - Package manager: `vim.pack`
-- Completion: `mini.completion`
-- Snippets: `mini.snippets` + `friendly-snippets`
+- Completion: `mini.completion` + native Copilot ghost text
+- Snippets: built-in `vim.snippet` first; add a snippet library later only if it earns its keep
 - Formatting: `conform.nvim`
 - Linting: LSP diagnostics first
 - Roots: helper only, no cwd auto-switch

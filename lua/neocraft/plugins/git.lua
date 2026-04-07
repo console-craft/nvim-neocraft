@@ -728,7 +728,11 @@ function M.goto_hunk(direction)
   end)
 end
 
-function M.toggle_overlay() require('mini.diff').toggle_overlay(0) end
+function M.toggle_overlay()
+  local bufnr = vim.api.nvim_get_current_buf()
+  require('mini.diff').toggle_overlay(bufnr)
+  require('neocraft.plugins.lsp').reset_buffer_annotations(bufnr)
+end
 
 -- ┌───────────────────────────────────────────┐
 -- │ Setup                                     │

@@ -149,12 +149,16 @@ end
 -- │ Actions custom picker                     │
 -- └───────────────────────────────────────────┘
 
-local function feedkeys(keys)
-  return function() vim.api.nvim_feedkeys(vim.keycode(keys), 'm', false) end
+local function run_copilot_action(action)
+  return function() require('neocraft.plugins.lsp')[action]() end
 end
 
-local function notify_visual_only(action)
-  return function() vim.notify(action .. ' works from Visual mode only', vim.log.levels.INFO) end
+local function notify_specific_mode_only(action, mode)
+  return function() vim.notify(action .. ' works from ' .. mode .. ' mode only', vim.log.levels.INFO) end
+end
+
+local function feedkeys(keys)
+  return function() vim.api.nvim_feedkeys(vim.keycode(keys), 'm', false) end
 end
 
 local function action_items()
@@ -469,7 +473,7 @@ local function action_items()
       key = 'S',
       invoke = 'S',
       desc = 'Surround selection',
-      run = notify_visual_only('S'),
+      run = notify_specific_mode_only('S', 'Visual'),
     },
     {
       group = 'Editing',
@@ -649,6 +653,46 @@ local function action_items()
     },
     {
       group = 'Coding',
+      mode = 'i',
+      key = '<C-Space>',
+      invoke = '<C-Space>',
+      desc = 'Manually trigger completions',
+      run = notify_specific_mode_only('<C-Space>', 'Insert'),
+    },
+    {
+      group = 'Coding',
+      mode = 'i',
+      key = '<C-e>',
+      invoke = '<C-e>',
+      desc = 'Close completions / Accept to EOL',
+      run = notify_specific_mode_only('<C-e>', 'Insert'),
+    },
+    {
+      group = 'Coding',
+      mode = 'i',
+      key = '<C-]>',
+      invoke = '<C-]>',
+      desc = 'Dismiss active inline completion',
+      run = notify_specific_mode_only('<C-]>', 'Insert'),
+    },
+    {
+      group = 'Coding',
+      mode = 'i',
+      key = '<M-[>',
+      invoke = '<M-[>',
+      desc = 'Previous inline completion',
+      run = notify_specific_mode_only('<M-[>', 'Insert'),
+    },
+    {
+      group = 'Coding',
+      mode = 'i',
+      key = '<M-]>',
+      invoke = '<M-]>',
+      desc = 'Next / Retrigger inline completion',
+      run = notify_specific_mode_only('<M-]>', 'Insert'),
+    },
+    {
+      group = 'Coding',
       mode = 'n',
       key = '[e',
       invoke = '[e',
@@ -678,6 +722,22 @@ local function action_items()
       invoke = ']w',
       desc = 'Jump to next warning',
       run = feedkeys(']w'),
+    },
+    {
+      group = 'Coding',
+      mode = 'Not set',
+      key = 'Not set',
+      invoke = ':LspCopilotSignIn',
+      desc = 'Sign in to Copilot',
+      run = run_copilot_action('copilot_sign_in'),
+    },
+    {
+      group = 'Coding',
+      mode = 'Not set',
+      key = 'Not set',
+      invoke = ':LspCopilotSignOut',
+      desc = 'Sign out of Copilot',
+      run = run_copilot_action('copilot_sign_out'),
     },
     {
       group = 'Windows',

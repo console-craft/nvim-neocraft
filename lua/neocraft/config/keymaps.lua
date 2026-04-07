@@ -61,6 +61,136 @@ local function goto_diagnostic(next, severity)
   return function() vim.diagnostic.jump({ count = count, severity = level }) end
 end
 
+-- Completion
+
+local function copilot_clients(bufnr) return vim.lsp.get_clients({ bufnr = bufnr or 0, name = 'copilot' }) end
+
+local function reset_inline_completion(bufnr)
+  bufnr = bufnr or 0
+  local resolved = bufnr == 0 and vim.api.nvim_get_current_buf() or bufnr
+  if vim.tbl_isempty(copilot_clients(resolved)) then return false end
+
+  vim.lsp.inline_completion.enable(false, { bufnr = resolved })
+
+  vim.schedule(function()
+    if vim.api.nvim_buf_is_valid(resolved) then vim.lsp.inline_completion.enable(true, { bufnr = resolved }) end
+  end)
+
+  return true
+end
+
+local function completion_item_selected() return vim.fn.complete_info({ 'selected' }).selected ~= -1 end
+
+local function accept_completion_or_cr()
+  if vim.fn.pumvisible() == 1 and completion_item_selected() then
+    reset_inline_completion(0)
+    return vim.keycode('<C-y>')
+  end
+
+  return vim.keycode('<CR>')
+end
+
+local function close_completion_and_cr()
+  if vim.fn.pumvisible() == 1 then return vim.keycode('<C-e><CR>') end
+  return vim.keycode('<CR>')
+end
+
+local function dismiss_inline_completion_or_ctrl_right_square()
+  if reset_inline_completion(0) then return '' end
+  return vim.keycode('<C-]>')
+end
+
+local function close_completion_or_accept_inline_completion_to_eol()
+  if vim.fn.pumvisible() == 1 then return vim.keycode('<C-e>') end
+  if require('neocraft.plugins.lsp').accept_inline_completion_to_eol() then return '' end
+  return vim.keycode('<C-e>')
+end
+
+local function sync_inline_completion_state(bufnr)
+  if vim.tbl_isempty(copilot_clients(bufnr)) then return end
+  vim.lsp.inline_completion.enable(not vim.snippet.active(), { bufnr = bufnr })
+end
+
+local function sync_snippet_completion_state(bufnr)
+  bufnr = bufnr or 0
+  local snippet_active = vim.snippet.active()
+
+  if snippet_active then
+    vim.b[bufnr].minicompletion_disable = true
+  else
+    vim.b[bufnr].minicompletion_disable = nil
+  end
+
+  sync_inline_completion_state(bufnr)
+end
+
+local function trigger_manual_completion()
+  local bufnr = vim.api.nvim_get_current_buf()
+
+  vim.b[bufnr].minicompletion_disable = nil
+
+  require('mini.completion').complete_twostage()
+
+  vim.schedule(function()
+    if vim.api.nvim_buf_is_valid(bufnr) then sync_snippet_completion_state(bufnr) end
+  end)
+end
+
+local function close_completion_menu()
+  if vim.fn.pumvisible() == 1 then vim.api.nvim_feedkeys(vim.keycode('<C-e>'), 'in', false) end
+end
+
+-- Snippets
+
+local function accept_inline_completion_or_snippet_jump_next_or_tab()
+  close_completion_menu()
+
+  if vim.snippet.active({ direction = 1 }) then return '<Cmd>lua vim.snippet.jump(1)<CR>' end
+  if vim.snippet.active() then return '<Tab>' end
+
+  if vim.lsp.inline_completion.get() then return '' end
+
+  return '<Tab>'
+end
+
+local function snippet_jump_prev_or_stab()
+  close_completion_menu()
+  if vim.snippet.active({ direction = -1 }) then return '<Cmd>lua vim.snippet.jump(-1)<CR>' end
+  return '<S-Tab>'
+end
+
+local snippet_completion_group = Lib.augroup('snippet_completion')
+
+Lib.autocmd({ 'InsertEnter', 'CursorMovedI', 'ModeChanged' }, {
+  group = snippet_completion_group,
+  desc = 'Disable automatic completion while editing snippet placeholders',
+  callback = function(args)
+    local bufnr = args.buf ~= 0 and args.buf or vim.api.nvim_get_current_buf()
+    sync_snippet_completion_state(bufnr)
+  end,
+})
+
+Lib.autocmd('InsertCharPre', {
+  group = snippet_completion_group,
+  desc = 'Cancel pending automatic completion inside active snippet placeholders',
+  callback = function(args)
+    local bufnr = args.buf ~= 0 and args.buf or vim.api.nvim_get_current_buf()
+    if not vim.snippet.active() then return end
+
+    require('mini.completion').stop({ 'completion', 'info' })
+    vim.b[bufnr].minicompletion_disable = true
+  end,
+})
+
+Lib.autocmd('InsertLeave', {
+  group = snippet_completion_group,
+  desc = 'Clear snippet completion state on InsertLeave',
+  callback = function(args)
+    local bufnr = args.buf ~= 0 and args.buf or vim.api.nvim_get_current_buf()
+    vim.b[bufnr].minicompletion_disable = nil
+  end,
+})
+
 -- Toggles
 
 local function show_toggle_state(text) vim.api.nvim_echo({ { text, 'Normal' } }, false, {}) end
@@ -198,6 +328,27 @@ imap('<M-h>', '<Left>', 'Left', { noremap = false })
 imap('<M-j>', '<Down>', 'Down', { noremap = false })
 imap('<M-k>', '<Up>', 'Up', { noremap = false })
 imap('<M-l>', '<Right>', 'Right', { noremap = false })
+imap('<C-Space>', trigger_manual_completion, 'Manually trigger completions')
+imap(
+  '<C-e>',
+  close_completion_or_accept_inline_completion_to_eol,
+  'Close completions / Accept to EOL',
+  { expr = true }
+)
+imap('<C-]>', dismiss_inline_completion_or_ctrl_right_square, 'Dismiss active inline completion', { expr = true })
+imap('<CR>', accept_completion_or_cr, 'Accept selected completion item or insert newline', { expr = true })
+imap('<C-CR>', close_completion_and_cr, 'Close completion menu and insert newline', { expr = true })
+map({ 'i', 's' }, '<Tab>', accept_inline_completion_or_snippet_jump_next_or_tab, {
+  expr = true,
+  silent = true,
+  desc = 'Jump to next snippet tabstop or insert tab',
+})
+map({ 'i', 's' }, '<S-Tab>', snippet_jump_prev_or_stab, {
+  expr = true,
+  silent = true,
+  desc = 'Jump to previous snippet tabstop',
+})
+imap('<C-Tab>', '<Tab>', 'Insert literal tab')
 imap(',', ',<C-g>u', 'Insert comma with undo breakpoint')
 imap('.', '.<C-g>u', 'Insert period with undo breakpoint')
 imap(';', ';<C-g>u', 'Insert semicolon with undo breakpoint')

@@ -141,6 +141,33 @@ end)
 Lib.later(function() require('mini.extra').setup() end)
 
 -- ┌───────────────────────────────────────────┐
+-- │ mini.completion                           │
+-- └───────────────────────────────────────────┘
+
+Lib.now(function()
+  local process_items_opts = { kind_priority = { Text = -1, Snippet = 99 } }
+
+  local process_items = function(items, base)
+    return require('mini.completion').default_process_items(items, base, process_items_opts)
+  end
+
+  require('mini.completion').setup({
+    lsp_completion = {
+      auto_setup = false,
+      source_func = 'omnifunc',
+      process_items = process_items,
+    },
+    mappings = {
+      force_twostep = '',
+    },
+    window = {
+      info = { border = vim.o.winborder },
+      signature = { border = vim.o.winborder },
+    },
+  })
+end)
+
+-- ┌───────────────────────────────────────────┐
 -- │ mini.files                                │
 -- └───────────────────────────────────────────┘
 
