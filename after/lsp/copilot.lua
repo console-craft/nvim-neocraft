@@ -19,4 +19,9 @@ end
 
 return {
   root_dir = function(bufnr, on_dir) on_dir(copilot_root(bufnr)) end,
+  settings = {
+    nextEditSuggestions = {
+      enabled = vim.g.enable_NES == true,
+    },
+  },
 }

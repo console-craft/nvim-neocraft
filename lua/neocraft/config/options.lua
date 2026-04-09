@@ -11,6 +11,8 @@ vim.env.RIPGREP_CONFIG_PATH = vim.fs.joinpath(vim.fn.stdpath('config'), '.ripgre
 vim.g.mapleader                  = ' '                              -- Use `<Space>` as <Leader> key
 vim.g.markdown_recommended_style = 0                                -- Disable legacy markdown style defaults
 vim.g.have_nerd_font             = true                             -- Enable icons in the UI
+vim.g.enable_inline_completions  = true                             -- Enable native Copilot inline completions at startup
+vim.g.enable_NES                 = true                             -- Enable Copilot NES integration at startup
 
 -- ┌───────────────────────────────────────────┐
 -- │ General Settings                          │

@@ -82,6 +82,7 @@
   - `mini.completion`
   - built-in `vim.snippet` for LSP-provided snippet placeholders
   - native Copilot via `nvim-lspconfig` `copilot` + `vim.lsp.inline_completion`
+  - `copilot-lsp` only as an NES helper layer for the native Copilot client
   - defer `mini.snippets` / `friendly-snippets` until a clear need appears
 - Git baseline:
   - `mini.git`
@@ -413,6 +414,9 @@
 - Stage 11 landed as:
   - `mini.completion` owns the popup-menu baseline, with `omnifunc` wired on `LspAttach` and `MiniCompletion.get_lsp_capabilities()` merged into the shared LSP capabilities
   - completion-related options were revisited here: `complete`, `completeopt`, and `completetimeout`
+  - add startup feature flags in `options.lua`:
+    - `vim.g.enable_inline_completions = true`
+    - `vim.g.enable_NES = true`
   - keep the popup-menu language close to built-in completion:
     - `<C-Space>` triggers completion manually
     - `<CR>` accepts the selected popup item or inserts a newline
@@ -431,8 +435,28 @@
     - `<M-]>` cycles to the next Copilot suggestion, or retriggers suggestions when none are visible
     - `<M-[>` cycles to the previous Copilot suggestion
   - surface Copilot sign-in/sign-out plus completion/inline-suggestion actions in the `<C-p>` action picker under `Coding`
+  - NES landed through `copilot-lsp`, but only as a helper layer around the native `copilot` client:
+    - do not use `copilot-lsp`'s `copilot_ls` config or cwd-based root handling
+    - enable Copilot `nextEditSuggestions` through `after/lsp/copilot.lua`
+    - request NES only once back in Normal mode, using `TextChanged` and `InsertLeave`
+    - clear NES on `InsertEnter`
+    - keep Copilot `textDocument/didFocus` notifications explicit on buffer focus
+    - accept NES with Normal-mode `<Tab>`, otherwise fall back to `<C-i>`
+    - dismiss NES with Normal-mode `<Esc>`, otherwise fall back to the normal clear-on-escape behavior
+  - NES currently uses the preferred sticky clearing behavior:
+    - `move_count_threshold = 100`
+    - `distance_threshold = 40`
+    - `clear_on_large_distance = false`
+    - `count_horizontal_moves = true`
+    - `reset_on_approaching = true`
+    - local request debounce of `100ms`
+  - dismissed NES suggestions can be recovered intentionally:
+    - cache the dismissed suggestion locally
+    - allow up to `3` no-edit `InsertLeave` revives from cache
+    - clear the cached revive state on real edits or on successful accept
+  - patch `copilot-lsp` preview rendering locally for multiline replace previews so exclusive end ranges and unchanged leading context do not make unrelated lines look deleted
   - keep this intentionally simpler than a `blink.cmp`-style stack unless a clear gap appears later
-  - defer NES until the baseline completion/Copilot UX proves worth the extra complexity
+  - `mini.snippets` / `friendly-snippets` remain explicitly deferred until snippet-library usage proves worthwhile
 
 ### Stage 12: Formatting
 
@@ -489,6 +513,7 @@
 
 - Package manager: `vim.pack`
 - Completion: `mini.completion` + native Copilot ghost text
+- NES: `copilot-lsp` helper on top of native Copilot, Normal-mode focused and explicitly wired
 - Snippets: built-in `vim.snippet` first; add a snippet library later only if it earns its keep
 - Formatting: `conform.nvim`
 - Linting: LSP diagnostics first

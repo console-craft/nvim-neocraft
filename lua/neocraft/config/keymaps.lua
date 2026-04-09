@@ -65,7 +65,36 @@ end
 
 local function copilot_clients(bufnr) return vim.lsp.get_clients({ bufnr = bufnr or 0, name = 'copilot' }) end
 
+local function inline_completions_enabled() return vim.g.enable_inline_completions == true end
+
+local function nes_enabled() return vim.g.enable_NES == true end
+
+local function nes_pending(bufnr) return nes_enabled() and vim.b[bufnr].nes_state ~= nil end
+
+local function accept_nes_or_ctrl_i()
+  local bufnr = vim.api.nvim_get_current_buf()
+  if not nes_pending(bufnr) then return '<C-i>' end
+
+  vim.b[bufnr].neocraft_nes_reshow_budget = nil
+  vim.b[bufnr].neocraft_dismissed_nes = nil
+
+  local nes = require('copilot-lsp.nes')
+  local walked = nes.walk_cursor_start_edit(bufnr)
+  if walked then return '' end
+
+  local applied = nes.apply_pending_nes(bufnr)
+  if applied then nes.walk_cursor_end_edit(bufnr) end
+  return ''
+end
+
+local function dismiss_nes_or_clear_escape()
+  if nes_enabled() and require('neocraft.plugins.lsp').dismiss_nes() then return end
+  require('neocraft.actions').clear_on_escape()
+end
+
 local function reset_inline_completion(bufnr)
+  if not inline_completions_enabled() then return false end
+
   bufnr = bufnr or 0
   local resolved = bufnr == 0 and vim.api.nvim_get_current_buf() or bufnr
   if vim.tbl_isempty(copilot_clients(resolved)) then return false end
@@ -107,6 +136,11 @@ local function close_completion_or_accept_inline_completion_to_eol()
 end
 
 local function sync_inline_completion_state(bufnr)
+  if not inline_completions_enabled() then
+    if not vim.tbl_isempty(copilot_clients(bufnr)) then vim.lsp.inline_completion.enable(false, { bufnr = bufnr }) end
+    return
+  end
+
   if vim.tbl_isempty(copilot_clients(bufnr)) then return end
   vim.lsp.inline_completion.enable(not vim.snippet.active(), { bufnr = bufnr })
 end
@@ -310,6 +344,7 @@ end
 
 nmap('j', "v:count == 0 ? 'gj' : 'j'", 'Move cursor down one visual line', { expr = true })
 nmap('k', "v:count == 0 ? 'gk' : 'k'", 'Move cursor up one visual line', { expr = true })
+nmap('<Tab>', accept_nes_or_ctrl_i, 'Accept Copilot NES suggestion or jump forward', { expr = true })
 nmap(
   '<C-d>',
   function() return require('neocraft.actions').halfpage_down() end,
@@ -329,12 +364,7 @@ imap('<M-j>', '<Down>', 'Down', { noremap = false })
 imap('<M-k>', '<Up>', 'Up', { noremap = false })
 imap('<M-l>', '<Right>', 'Right', { noremap = false })
 imap('<C-Space>', trigger_manual_completion, 'Manually trigger completions')
-imap(
-  '<C-e>',
-  close_completion_or_accept_inline_completion_to_eol,
-  'Close completions / Accept to EOL',
-  { expr = true }
-)
+imap('<C-e>', close_completion_or_accept_inline_completion_to_eol, 'Close completions / Accept to EOL', { expr = true })
 imap('<C-]>', dismiss_inline_completion_or_ctrl_right_square, 'Dismiss active inline completion', { expr = true })
 imap('<CR>', accept_completion_or_cr, 'Accept selected completion item or insert newline', { expr = true })
 imap('<C-CR>', close_completion_and_cr, 'Close completion menu and insert newline', { expr = true })
@@ -519,7 +549,7 @@ map(
 )
 nmap('<C-q>', function() require('neocraft.actions').quit_neovim() end, 'Quit Neovim')
 
-nmap('<Esc>', function() require('neocraft.actions').clear_on_escape() end, 'Run multiple clearing actions')
+nmap('<Esc>', dismiss_nes_or_clear_escape, 'Dismiss Copilot NES or run clearing actions')
 
 nmap('<C-h>', function() navigate('h', 'Left') end, 'Focus window to the left')
 tmap('<C-h>', function() navigate('h', 'Left') end, 'Focus window to the left')
