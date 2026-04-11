@@ -74,6 +74,7 @@
   - `mason-tool-installer.nvim`
 - Formatting/linting baseline:
   - `conform.nvim`
+  - explicit formatter resolution with project-config detection first, then Neocraft defaults or LSP fallback depending on filetype
   - rely on LSP diagnostics first
   - skip `nvim-lint` in v1
 - Syntax/tooling baseline:
@@ -464,6 +465,32 @@
 - Define formatters by filetype.
 - Feed those formatter binaries into the Mason tool list.
 - Let formatting be explicit and declarative.
+- Stage 12 landed as:
+  - `conform.nvim` owns formatting through `lua/neocraft/plugins/format.lua`, while `config/keymaps.lua` owns the global entrypoints:
+    - `<Leader>cf` formats the current buffer
+    - `<Leader>cc` opens `:ConformInfo`
+  - formatter resolution is explicit and root-aware:
+    - nearest matching project formatter config wins inside the detected project
+    - when multiple formatter families are configured in the same directory, prefer `prettier` over `oxfmt` over `biome`
+  - project formatter config detection currently supports:
+    - Prettier config files and `package.json#prettier`
+    - `.oxfmtrc.json` / `.oxfmtrc.jsonc`
+    - `biome.json{,c}` and `.biome.json{,c}`
+  - Neocraft defaults landed as:
+    - `lua` -> `stylua`
+    - `sh` / `bash` / `zsh` -> `shfmt`
+    - `toml` -> project formatter family when configured, otherwise `taplo`
+    - `markdown` -> project formatter family when configured, otherwise `mdformat`
+    - `json` / `jsonc` / `yaml` / `yaml.docker-compose` -> project formatter family when configured, otherwise LSP formatting
+  - `formatexpr` is now routed through Conform globally so formatter-aware `gq` can use the same resolver policy
+  - prose formatting behavior landed as:
+    - `markdown` keeps formatter-aware `gq`
+    - `text` and `gitcommit` clear local `formatexpr` and keep built-in text reflow for `gq`
+    - intentionally skip `commitmsgfmt`; commit messages stay plain-text style
+  - autoformat-on-save is enabled through Conform for code/data buffers and intentionally skipped for prose-style buffers:
+    - save-format on: `lua`, `sh`, `bash`, `zsh`, `toml`, `json`, `jsonc`, `yaml`, `yaml.docker-compose`
+    - save-format off: `markdown`, `text`, `gitcommit`, and non-file buffers
+  - Mason tool installation now includes the formatter binaries needed for this layer, including `prettierd`, `prettier`, `oxfmt`, `biome`, and `mdformat`
 
 ### Stage 13: V1 Language Profiles
 
@@ -515,7 +542,7 @@
 - Completion: `mini.completion` + native Copilot ghost text
 - NES: `copilot-lsp` helper on top of native Copilot, Normal-mode focused and explicitly wired
 - Snippets: built-in `vim.snippet` first; add a snippet library later only if it earns its keep
-- Formatting: `conform.nvim`
+- Formatting: `conform.nvim`, with project-aware formatter config detection, formatter-aware Markdown, built-in `gq` for plain text / git commit messages, and conservative autoformat-on-save for code/data buffers
 - Linting: LSP diagnostics first
 - Roots: helper only, no cwd auto-switch
 - Sessions: global XDG state storage by project-root mapping

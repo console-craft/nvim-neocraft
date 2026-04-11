@@ -23,6 +23,7 @@ local function nmap_leader(lhs, rhs, desc, opts) nmap('<leader>' .. lhs, rhs, de
 
 local leader_group_clues = {
   { mode = 'n', keys = '<Leader>b', desc = '+Buffer' },
+  { mode = 'n', keys = '<Leader>c', desc = '+Code' },
   { mode = 'n', keys = '<Leader>g', desc = '+Git' },
   { mode = 'n', keys = '<Leader>gR', desc = '+Remove' },
   { mode = 'n', keys = '<Leader>gb', desc = '+Bisect' },
@@ -244,6 +245,11 @@ local function toggle_global_option(name)
   show_toggle_state(get_toggle_text(name, vim.o[name]))
 end
 
+local function toggle_format_on_save()
+  vim.g.enable_format_on_save = vim.g.enable_format_on_save ~= true
+  show_toggle_state(get_toggle_text('format on save', vim.g.enable_format_on_save))
+end
+
 local function toggle_background()
   vim.o.background = vim.o.background == 'dark' and 'light' or 'dark'
   show_toggle_state('Background: ' .. vim.o.background)
@@ -416,11 +422,11 @@ nmap(']G', function() require('neocraft.plugins.git').next_pending_file(true) en
 nmap('[<Tab>', '<Cmd>tabprevious<CR>', 'Previous tab')
 nmap(']<Tab>', '<Cmd>tabnext<CR>', 'Next tab')
 
--- TODO: (in the future) - format (\f), minimap (\m)
 nmap('\\b', toggle_background, 'Toggle background')
 nmap('\\c', function() toggle_window_option('cursorline') end, 'Toggle cursorline')
 nmap('\\`', toggle_conceallevel, 'Toggle conceallevel')
 nmap('\\d', toggle_diagnostics, 'Toggle diagnostics')
+nmap('\\f', toggle_format_on_save, 'Toggle format on save')
 nmap('\\h', function() require('neocraft.plugins.lsp').toggle_inlay_hints() end, 'Toggle inlay hints')
 nmap('\\i', function() toggle_global_option('ignorecase') end, 'Toggle ignorecase')
 nmap('\\l', function() require('neocraft.plugins.lsp').toggle_codelens() end, 'Toggle code lens')
@@ -442,6 +448,10 @@ nmap_leader('z', 'zA', 'Toggle current fold')
 nmap_leader('s', '<C-w>s', 'Split below')
 nmap_leader('v', '<C-w>v', 'Split right')
 nmap_leader('q', '<C-w>c', 'Close window')
+
+-- Code namespace
+nmap_leader('cc', function() require('neocraft.plugins.format').info() end, 'Formatting info')
+nmap_leader('cf', function() require('neocraft.plugins.format').format() end, 'Format buffer')
 
 -- Buffer namespace
 nmap_leader('ba', '<cmd>e #<cr>', 'Alternate buffer')

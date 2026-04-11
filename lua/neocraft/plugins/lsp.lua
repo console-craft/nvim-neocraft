@@ -35,6 +35,11 @@ M.tools = {
   'luacheck',
   'stylua',
   'shfmt',
+  'prettierd',
+  'prettier',
+  'oxfmt',
+  'biome',
+  'mdformat',
 }
 
 -- ┌───────────────────────────────────────────┐
@@ -691,8 +696,6 @@ local function refresh_clue_triggers(bufnr)
   end)
 end
 
-local function format_buffer(bufnr) return vim.lsp.buf.format({ bufnr = bufnr }) end
-
 local function show_attached_clients(bufnr)
   bufnr = bufnr or vim.api.nvim_get_current_buf()
 
@@ -712,19 +715,6 @@ end
 
 local function lsp_picker(scope)
   return function() require('mini.extra').pickers.lsp({ scope = scope }) end
-end
-
-local function add_mini_clue_code_group(bufnr)
-  local config = vim.b[bufnr].miniclue_config or {}
-  local clues = vim.deepcopy(config.clues or {})
-
-  for _, clue in ipairs(clues) do
-    if clue.mode == 'n' and clue.keys == '<Leader>c' and clue.desc == '+Code' then return end
-  end
-
-  table.insert(clues, { mode = 'n', keys = '<Leader>c', desc = '+Code' })
-  config.clues = clues
-  vim.b[bufnr].miniclue_config = config
 end
 
 if vim.fn.exists(':LspInfo') ~= 2 then
@@ -756,8 +746,6 @@ Lib.autocmd('LspAttach', {
 
     vim.bo[bufnr].omnifunc = 'v:lua.MiniCompletion.completefunc_lsp'
 
-    add_mini_clue_code_group(bufnr)
-
     local map = function(mode, lhs, rhs, desc)
       vim.keymap.set(mode, lhs, rhs, { buffer = bufnr, silent = true, desc = desc })
     end
@@ -784,10 +772,6 @@ Lib.autocmd('LspAttach', {
 
     if client:supports_method(Methods.textDocument_signatureHelp, bufnr) then
       map('i', '<C-k>', vim.lsp.buf.signature_help, 'Signature help')
-    end
-
-    if client:supports_method(Methods.textDocument_formatting, bufnr) then
-      map('n', '<Leader>cf', function() format_buffer(bufnr) end, 'Format buffer')
     end
 
     map('n', '<Leader>cd', vim.diagnostic.open_float, 'Line diagnostics')

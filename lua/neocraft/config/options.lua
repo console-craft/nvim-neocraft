@@ -11,6 +11,7 @@ vim.env.RIPGREP_CONFIG_PATH = vim.fs.joinpath(vim.fn.stdpath('config'), '.ripgre
 vim.g.mapleader                  = ' '                              -- Use `<Space>` as <Leader> key
 vim.g.markdown_recommended_style = 0                                -- Disable legacy markdown style defaults
 vim.g.have_nerd_font             = true                             -- Enable icons in the UI
+vim.g.enable_format_on_save      = true                             -- Enable save-time formatting at startup
 vim.g.enable_inline_completions  = true                             -- Enable native Copilot inline completions at startup
 vim.g.enable_NES                 = true                             -- Enable Copilot NES integration at startup
 
@@ -119,6 +120,7 @@ opt.spelloptions                 = 'camel'                          -- Treat cam
 opt.conceallevel                 = 0                                -- Keep code and data buffers fully visible by default.
 opt.concealcursor                = ''                               -- Only conceal in filetypes that opt in locally.
 opt.formatlistpat                = [[^\s*[0-9\-\+\*]\+[\.\)]*\s\+]] -- Recognize numbered and bulleted lists
+opt.formatexpr                  = "v:lua.require'neocraft.plugins.format'.formatexpr()" -- Route `gq` through Conform by default
 
 -- stylua: ignore end
 
