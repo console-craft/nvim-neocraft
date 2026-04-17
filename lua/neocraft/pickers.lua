@@ -153,6 +153,10 @@ local function run_copilot_action(action)
   return function() require('neocraft.plugins.lsp')[action]() end
 end
 
+local function run_lsp_action(action)
+  return function() require('neocraft.plugins.lsp')[action]() end
+end
+
 local function notify_specific_mode_only(action, mode)
   return function() vim.notify(action .. ' works from ' .. mode .. ' mode only', vim.log.levels.INFO) end
 end
@@ -600,15 +604,23 @@ local function action_items()
       mode = 'n',
       key = 'gd',
       invoke = 'gd',
-      desc = 'Goto definition or tag',
+      desc = 'Go to definition / tag',
       run = feedkeys('gd'),
+    },
+    {
+      group = 'Coding',
+      mode = 'n',
+      key = 'gD',
+      invoke = 'gD',
+      desc = 'Go to declaration / TS: Go to source definition',
+      run = feedkeys('gD'),
     },
     {
       group = 'Coding',
       mode = 'n',
       key = 'grr',
       invoke = 'grr',
-      desc = 'Goto references',
+      desc = 'Go to references',
       run = feedkeys('grr'),
     },
     {
@@ -616,7 +628,7 @@ local function action_items()
       mode = 'n',
       key = 'gri',
       invoke = 'gri',
-      desc = 'Goto implementation',
+      desc = 'Go to implementation',
       run = feedkeys('gri'),
     },
     {
@@ -624,8 +636,24 @@ local function action_items()
       mode = 'n',
       key = 'grt',
       invoke = 'grt',
-      desc = 'Goto type definition',
+      desc = 'Go to type definition',
       run = feedkeys('grt'),
+    },
+    {
+      group = 'Coding',
+      mode = 'n',
+      key = 'gR',
+      invoke = "require('neocraft.plugins.lsp').typescript_file_references()",
+      desc = 'TS: Go to file references',
+      run = run_lsp_action('typescript_file_references'),
+    },
+    {
+      group = 'Coding',
+      mode = 'n',
+      key = 'grn',
+      invoke = 'grn',
+      desc = 'Rename symbol',
+      run = feedkeys('grn'),
     },
     {
       group = 'Coding',
@@ -638,10 +666,90 @@ local function action_items()
     {
       group = 'Coding',
       mode = 'n',
-      key = 'grn',
-      invoke = 'grn',
-      desc = 'Rename symbol',
-      run = feedkeys('grn'),
+      key = '<Leader>cla',
+      invoke = "require('neocraft.plugins.lsp').show_attached_clients()",
+      desc = 'Attached LSP clients',
+      run = run_lsp_action('show_attached_clients'),
+    },
+    {
+      group = 'Coding',
+      mode = 'n',
+      key = '<Leader>clc',
+      invoke = "require('neocraft.plugins.format').info()",
+      desc = 'Conform info',
+      run = function() require('neocraft.plugins.format').info() end,
+    },
+    {
+      group = 'Coding',
+      mode = 'n',
+      key = '<Leader>cll',
+      invoke = ':LspInfo',
+      desc = 'LSP info',
+      run = function() vim.cmd.LspInfo() end,
+    },
+    {
+      group = 'Coding',
+      mode = 'n',
+      key = '<Leader>cO',
+      invoke = "require('neocraft.plugins.lsp').typescript_organize_imports()",
+      desc = 'TS: Organize imports',
+      run = run_lsp_action('typescript_organize_imports'),
+    },
+    {
+      group = 'Coding',
+      mode = 'n',
+      key = '<Leader>cO',
+      invoke = "require('neocraft.plugins.lsp').python_organize_imports()",
+      desc = 'Py: Organize imports',
+      run = run_lsp_action('python_organize_imports'),
+    },
+    {
+      group = 'Coding',
+      mode = 'n',
+      key = '<Leader>cM',
+      invoke = "require('neocraft.plugins.lsp').typescript_add_missing_imports()",
+      desc = 'TS: Add missing imports',
+      run = run_lsp_action('typescript_add_missing_imports'),
+    },
+    {
+      group = 'Coding',
+      mode = 'n',
+      key = '<Leader>cU',
+      invoke = "require('neocraft.plugins.lsp').typescript_remove_unused_imports()",
+      desc = 'TS: Remove unused imports',
+      run = run_lsp_action('typescript_remove_unused_imports'),
+    },
+    {
+      group = 'Coding',
+      mode = 'n',
+      key = '<Leader>cR',
+      invoke = "require('neocraft.plugins.lsp').typescript_restart()",
+      desc = 'TS: Restart server',
+      run = run_lsp_action('typescript_restart'),
+    },
+    {
+      group = 'Coding',
+      mode = 'n',
+      key = '<Leader>cV',
+      invoke = "require('neocraft.plugins.lsp').typescript_select_version()",
+      desc = 'TS: Select workspace version',
+      run = run_lsp_action('typescript_select_version'),
+    },
+    {
+      group = 'Coding',
+      mode = 'n',
+      key = '<Leader>cV',
+      invoke = "require('neocraft.plugins.lsp').python_select_venv()",
+      desc = 'Py: Select virtual environment',
+      run = run_lsp_action('python_select_venv'),
+    },
+    {
+      group = 'Coding',
+      mode = 'n',
+      key = '<Leader>clt',
+      invoke = "require('neocraft.plugins.lsp').typescript_open_log()",
+      desc = 'TS: Open server log',
+      run = run_lsp_action('typescript_open_log'),
     },
     {
       group = 'Coding',
@@ -778,7 +886,7 @@ local function action_items()
     item.mode = item.mode or 'Not set'
     item.key = item.key or 'Not set'
     item.text = string.format(
-      '%-8s │ %-12s │ %-35s │ %-14s │ %s',
+      '%-8s │ %-12s │ %-50s │ %-14s │ %s',
       item.mode,
       item.key,
       item.desc,

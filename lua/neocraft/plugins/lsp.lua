@@ -1,4 +1,5 @@
 local pack = require('neocraft.core.pack')
+local lang = require('neocraft.lang')
 
 local M = {}
 
@@ -15,34 +16,6 @@ local function is_copilot_client(client) return client.name == 'copilot' end
 local function nes_enabled() return vim.g.enable_NES == true end
 
 -- ┌───────────────────────────────────────────┐
--- │ LSP servers and tools to auto-install     │
--- └───────────────────────────────────────────┘
-
-M.servers = {
-  copilot = {},
-  lua_ls = {},
-  jsonls = {},
-  yamlls = {},
-  gh_actions_ls = {},
-  dockerls = {},
-  docker_compose_language_service = {},
-  taplo = {},
-  bashls = {},
-  marksman = {},
-}
-
-M.tools = {
-  'luacheck',
-  'stylua',
-  'shfmt',
-  'prettierd',
-  'prettier',
-  'oxfmt',
-  'biome',
-  'mdformat',
-}
-
--- ┌───────────────────────────────────────────┐
 -- │ Install LSP related plugins               │
 -- └───────────────────────────────────────────┘
 
@@ -53,6 +26,7 @@ pack.add('lsp', {
   { src = 'https://github.com/neovim/nvim-lspconfig' },
   { src = 'https://github.com/copilotlsp-nvim/copilot-lsp' },
   { src = 'https://github.com/b0o/SchemaStore.nvim' },
+  { src = 'https://github.com/linux-cultist/venv-selector.nvim' },
 })
 
 -- ┌───────────────────────────────────────────┐
@@ -74,9 +48,9 @@ local function lsp_capabilities()
   return vim.tbl_deep_extend('force', file_operation_capabilities(), require('mini.completion').get_lsp_capabilities())
 end
 
-local function server_names() return vim.tbl_keys(M.servers) end
+local function server_names() return vim.tbl_keys(lang.servers) end
 
-local function ensure_installed() return vim.list_extend(server_names(), vim.deepcopy(M.tools)) end
+local function ensure_installed() return vim.list_extend(server_names(), vim.deepcopy(lang.tools)) end
 
 Lib.now(function()
   require('mason').setup({
@@ -106,12 +80,20 @@ Lib.now(function()
     })
   end
 
+  require('venv-selector').setup({
+    options = {
+      notify_user_on_venv_activation = false,
+      picker = 'mini-pick',
+      require_lsp_activation = true,
+    },
+  })
+
   vim.lsp.config('*', {
     capabilities = lsp_capabilities(),
   })
 
   for _, name in ipairs(server_names()) do
-    vim.lsp.config(name, M.servers[name])
+    vim.lsp.config(name, lang.servers[name])
     vim.lsp.enable(name)
   end
 end)
@@ -684,6 +666,169 @@ end
 if nes_enabled() then patch_copilot_nes_preview() end
 
 -- ┌───────────────────────────────────────────┐
+-- │ TypeScript helpers                        │
+-- └───────────────────────────────────────────┘
+
+local function open_locations(result, client, title)
+  local locations = result == nil and {} or (vim.islist(result) and result or { result })
+  if vim.tbl_isempty(locations) then
+    vim.notify('No ' .. title:lower() .. ' found', vim.log.levels.INFO)
+    return
+  end
+
+  if #locations == 1 then
+    vim.lsp.util.show_document(locations[1], client.offset_encoding, {
+      focus = true,
+      reuse_win = true,
+    })
+    return
+  end
+
+  -- TODO: show in a picker instead of populaing the qflist
+  vim.fn.setqflist({}, ' ', {
+    title = title,
+    items = vim.lsp.util.locations_to_items(locations, client.offset_encoding),
+  })
+  vim.cmd.copen()
+end
+
+local function typescript_client(bufnr) return vim.lsp.get_clients({ bufnr = bufnr or 0, name = 'vtsls' })[1] end
+
+local function with_typescript_client(bufnr, callback)
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
+
+  local client = typescript_client(bufnr)
+  if not client then
+    vim.notify('vtsls is not attached to the current buffer', vim.log.levels.INFO)
+    return nil
+  end
+
+  return callback(client, bufnr)
+end
+
+local function typescript_execute_command(command, opts)
+  opts = opts or {}
+
+  return with_typescript_client(opts.bufnr, function(client, bufnr)
+    local arguments = opts.arguments
+    if type(arguments) == 'function' then arguments = arguments(client, bufnr) end
+
+    client:request('workspace/executeCommand', {
+      command = command,
+      arguments = arguments or {},
+    }, function(err, result)
+      if err then
+        vim.notify(
+          ('TypeScript command `%s` failed: %s'):format(command, err.message or err.code),
+          vim.log.levels.ERROR
+        )
+        return
+      end
+
+      if type(opts.on_result) == 'function' then opts.on_result(result, client, bufnr) end
+    end, bufnr)
+  end)
+end
+
+function M.typescript_source_definition(bufnr)
+  return typescript_execute_command('typescript.goToSourceDefinition', {
+    bufnr = bufnr,
+    arguments = function(client)
+      local params = vim.lsp.util.make_position_params(vim.api.nvim_get_current_win(), client.offset_encoding)
+      return { params.textDocument.uri, params.position }
+    end,
+    on_result = function(result, client) open_locations(result, client, 'TypeScript source definitions') end,
+  })
+end
+
+function M.typescript_file_references(bufnr)
+  return typescript_execute_command('typescript.findAllFileReferences', {
+    bufnr = bufnr,
+    arguments = function(_, resolved_bufnr) return { vim.uri_from_bufnr(resolved_bufnr) } end,
+    on_result = function(result, client) open_locations(result, client, 'TypeScript file references') end,
+  })
+end
+
+local function typescript_code_action(kind, bufnr)
+  return with_typescript_client(bufnr, function(client)
+    vim.lsp.buf.code_action({
+      apply = true,
+      context = {
+        diagnostics = {},
+        only = { kind },
+      },
+      filter = function(_, client_id) return client_id == client.id end,
+    })
+  end)
+end
+
+function M.typescript_organize_imports(bufnr) return typescript_code_action('source.organizeImports', bufnr) end
+
+function M.typescript_add_missing_imports(bufnr) return typescript_code_action('source.addMissingImports.ts', bufnr) end
+
+function M.typescript_remove_unused_imports(bufnr) return typescript_code_action('source.removeUnused.ts', bufnr) end
+
+function M.typescript_select_version(bufnr)
+  return typescript_execute_command('typescript.selectTypeScriptVersion', {
+    bufnr = bufnr,
+  })
+end
+
+function M.typescript_open_log(bufnr)
+  return typescript_execute_command('typescript.openTsServerLog', {
+    bufnr = bufnr,
+  })
+end
+
+function M.typescript_restart(bufnr)
+  return typescript_execute_command('typescript.restartTsServer', {
+    bufnr = bufnr,
+  })
+end
+
+-- ┌───────────────────────────────────────────┐
+-- │ Python helpers                            │
+-- └───────────────────────────────────────────┘
+
+local function ruff_client(bufnr) return vim.lsp.get_clients({ bufnr = bufnr or 0, name = 'ruff' })[1] end
+
+local function with_ruff_client(bufnr, callback)
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
+
+  local client = ruff_client(bufnr)
+  if not client then
+    vim.notify('ruff is not attached to the current buffer', vim.log.levels.INFO)
+    return nil
+  end
+
+  return callback(client, bufnr)
+end
+
+local function ruff_code_action(kind, bufnr)
+  return with_ruff_client(bufnr, function(client)
+    vim.lsp.buf.code_action({
+      apply = true,
+      context = {
+        diagnostics = {},
+        only = { kind },
+      },
+      filter = function(_, client_id) return client_id == client.id end,
+    })
+  end)
+end
+
+function M.python_organize_imports(bufnr) return ruff_code_action('source.organizeImports.ruff', bufnr) end
+
+function M.python_select_venv()
+  if vim.bo.filetype ~= 'python' then
+    vim.notify('Python virtual environment selection is only available in Python buffers', vim.log.levels.INFO)
+    return
+  end
+
+  vim.cmd.VenvSelect()
+end
+
+-- ┌───────────────────────────────────────────┐
 -- │ On attach LSP setup & mappings            │
 -- └───────────────────────────────────────────┘
 
@@ -700,18 +845,59 @@ local function show_attached_clients(bufnr)
   bufnr = bufnr or vim.api.nvim_get_current_buf()
 
   local clients = vim.lsp.get_clients({ bufnr = bufnr })
+  table.sort(clients, function(a, b)
+    if a.name == b.name then return a.id < b.id end
+    return a.name < b.name
+  end)
+
+  local path = vim.api.nvim_buf_get_name(bufnr)
+  local lines = {
+    'Attached LSP Clients',
+    '',
+    'Buffer: ' .. bufnr,
+    'Path: ' .. (path ~= '' and path or '<unnamed>'),
+    '',
+  }
+
   if vim.tbl_isempty(clients) then
-    vim.notify('No LSP clients attached to the current buffer', vim.log.levels.WARN)
-    return
+    table.insert(lines, 'No LSP clients attached to this buffer.')
+  else
+    for _, client in ipairs(clients) do
+      table.insert(lines, '- ' .. client.name)
+    end
   end
 
-  local names = vim.tbl_map(function(client) return client.name end, clients)
-  table.sort(names)
+  vim.cmd.tabnew()
 
-  vim.notify(table.concat(names, '\n'), vim.log.levels.INFO, {
-    title = 'Attached LSP Clients',
-  })
+  local placeholder = vim.api.nvim_get_current_buf()
+
+  local scratch = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_win_set_buf(0, scratch)
+  vim.bo[scratch].buftype = 'nofile'
+  vim.bo[scratch].bufhidden = 'wipe'
+  vim.bo[scratch].buflisted = false
+  vim.bo[scratch].filetype = 'text'
+  vim.bo[scratch].modifiable = true
+  vim.bo[scratch].swapfile = false
+  vim.api.nvim_buf_set_lines(scratch, 0, -1, false, lines)
+  vim.bo[scratch].modifiable = false
+  vim.bo[scratch].modified = false
+
+  vim.schedule(function()
+    if not vim.api.nvim_buf_is_valid(scratch) then return end
+
+    local ok, clue = pcall(require, 'mini.clue')
+    if not ok then return end
+
+    clue.ensure_buf_triggers(scratch)
+  end)
+
+  if placeholder ~= scratch and vim.api.nvim_buf_is_valid(placeholder) then
+    pcall(vim.api.nvim_buf_delete, placeholder, { force = true })
+  end
 end
+
+function M.show_attached_clients(bufnr) return show_attached_clients(bufnr) end
 
 local function lsp_picker(scope)
   return function() require('mini.extra').pickers.lsp({ scope = scope }) end
@@ -750,16 +936,24 @@ Lib.autocmd('LspAttach', {
       vim.keymap.set(mode, lhs, rhs, { buffer = bufnr, silent = true, desc = desc })
     end
 
+    if client:supports_method(Methods.textDocument_hover, bufnr) then
+      map('n', 'K', vim.lsp.buf.hover, 'Hover documentation')
+    end
+
     if client:supports_method(Methods.textDocument_references, bufnr) then
-      map('n', 'grr', lsp_picker('references'), 'Goto references')
+      map('n', 'grr', lsp_picker('references'), 'Go to references')
     end
 
     if client:supports_method(Methods.textDocument_implementation, bufnr) then
-      map('n', 'gri', lsp_picker('implementation'), 'Goto implementation')
+      map('n', 'gri', lsp_picker('implementation'), 'Go to implementation')
     end
 
     if client:supports_method(Methods.textDocument_typeDefinition, bufnr) then
-      map('n', 'grt', lsp_picker('type_definition'), 'Goto type definition')
+      map('n', 'grt', lsp_picker('type_definition'), 'Go to type definition')
+    end
+
+    if client:supports_method(Methods.textDocument_declaration, bufnr) then
+      map('n', 'gD', vim.lsp.buf.declaration, 'Go to declaration')
     end
 
     if client:supports_method(Methods.textDocument_documentSymbol, bufnr) then
@@ -776,9 +970,9 @@ Lib.autocmd('LspAttach', {
 
     map('n', '<Leader>cd', vim.diagnostic.open_float, 'Line diagnostics')
 
-    map('n', '<Leader>ca', function() show_attached_clients(bufnr) end, 'Attached LSP clients')
+    map('n', '<Leader>cla', function() show_attached_clients(bufnr) end, 'Attached LSP clients')
 
-    map('n', '<Leader>ci', '<Cmd>LspInfo<CR>', 'LSP info')
+    map('n', '<Leader>cll', '<Cmd>LspInfo<CR>', 'LSP info')
 
     if client:supports_method(Methods.textDocument_inlayHint, bufnr) then
       if vim.b[bufnr].neocraft_inlay_hints_enabled == nil then vim.b[bufnr].neocraft_inlay_hints_enabled = true end
@@ -809,6 +1003,38 @@ Lib.autocmd('LspAttach', {
     end
 
     if is_copilot_client(client) then M.setup_copilot_nes(bufnr, client) end
+
+    if client.name == 'vtsls' then
+      map('n', 'gD', function() M.typescript_source_definition(bufnr) end, 'TS: Go to source definition')
+      map('n', 'gR', function() M.typescript_file_references(bufnr) end, 'TS: Go to file references')
+      map('n', '<Leader>clt', function() M.typescript_open_log(bufnr) end, 'TS: Open server log')
+      map('n', '<Leader>cO', function() M.typescript_organize_imports(bufnr) end, 'TS: Organize imports')
+      map('n', '<Leader>cM', function() M.typescript_add_missing_imports(bufnr) end, 'TS: Add missing imports')
+      map('n', '<Leader>cU', function() M.typescript_remove_unused_imports(bufnr) end, 'TS: Remove unused imports')
+      map('n', '<Leader>cR', function() M.typescript_restart(bufnr) end, 'TS: Restart server')
+      map('n', '<Leader>cV', function() M.typescript_select_version(bufnr) end, 'TS: Select workspace version')
+
+      local create_buffer_command = function(name, rhs, desc)
+        if vim.api.nvim_buf_get_commands(bufnr, {})[name] ~= nil then return end
+        vim.api.nvim_buf_create_user_command(bufnr, name, rhs, { desc = desc })
+      end
+
+      create_buffer_command(
+        'TypeScriptVersion',
+        function() M.typescript_select_version(bufnr) end,
+        'TS: Select workspace version'
+      )
+      create_buffer_command('TypeScriptOpenLog', function() M.typescript_open_log(bufnr) end, 'TS: Open server log')
+      create_buffer_command('TypeScriptRestart', function() M.typescript_restart(bufnr) end, 'TS: Restart server')
+    end
+
+    if client.name == 'ruff' then
+      map('n', '<Leader>cO', function() M.python_organize_imports(bufnr) end, 'Py: Organize imports')
+    end
+
+    if client.name == 'basedpyright' then
+      map('n', '<Leader>cV', M.python_select_venv, 'Py: Select virtual environment')
+    end
 
     refresh_clue_triggers(bufnr)
   end,

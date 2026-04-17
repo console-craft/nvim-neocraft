@@ -1,4 +1,5 @@
 local pack = require('neocraft.core.pack')
+local lang = require('neocraft.lang')
 local root = require('neocraft.core.root')
 
 local M = {}
@@ -34,28 +35,49 @@ local biome_markers = {
   '.biome.jsonc',
 }
 
-local family_order = { 'prettier', 'oxfmt', 'biome' }
+local ruff_markers = {
+  'ruff.toml',
+  '.ruff.toml',
+  'pyproject.toml',
+}
+
+local family_order = { 'prettier', 'oxfmt', 'biome', 'ruff' }
 
 local family_support = {
   prettier = {
+    javascript = true,
+    javascriptreact = true,
     json = true,
     jsonc = true,
     markdown = true,
     toml = true,
+    typescript = true,
+    typescriptreact = true,
     yaml = true,
     ['yaml.docker-compose'] = true,
   },
   oxfmt = {
+    javascript = true,
+    javascriptreact = true,
     json = true,
     jsonc = true,
     markdown = true,
     toml = true,
+    typescript = true,
+    typescriptreact = true,
     yaml = true,
     ['yaml.docker-compose'] = true,
   },
   biome = {
+    javascript = true,
+    javascriptreact = true,
     json = true,
     jsonc = true,
+    typescript = true,
+    typescriptreact = true,
+  },
+  ruff = {
+    python = true,
   },
 }
 
@@ -75,6 +97,16 @@ local function read_json(path)
   return ok and decoded or nil
 end
 
+local function read_text(path)
+  local file = io.open(path, 'r')
+  if not file then return nil end
+
+  local content = file:read('*all')
+  file:close()
+
+  return content
+end
+
 local function package_has_prettier(dir)
   local package_json = vim.fs.joinpath(dir, 'package.json')
   if not file_exists(package_json) then return false end
@@ -87,10 +119,40 @@ local function family_markers(family)
   if family == 'prettier' then return prettier_markers end
   if family == 'oxfmt' then return oxfmt_markers end
   if family == 'biome' then return biome_markers end
+  if family == 'ruff' then return ruff_markers end
   return {}
 end
 
+local function ruff_file_has_format_config(path)
+  local content = read_text(path)
+  if type(content) ~= 'string' then return false end
+
+  for _, line in ipairs(vim.split(content, '\n', { plain = true })) do
+    if line:match('^%s*%[format%]%s*$') then return true end
+  end
+
+  return false
+end
+
+local function pyproject_has_ruff_format(dir)
+  local pyproject = vim.fs.joinpath(dir, 'pyproject.toml')
+  local content = read_text(pyproject)
+  if type(content) ~= 'string' then return false end
+
+  for _, line in ipairs(vim.split(content, '\n', { plain = true })) do
+    if line:match('^%s*%[tool%.ruff%.format%]%s*$') then return true end
+  end
+
+  return false
+end
+
 local function family_has_config(dir, family)
+  if family == 'ruff' then
+    if ruff_file_has_format_config(vim.fs.joinpath(dir, 'ruff.toml')) then return true end
+    if ruff_file_has_format_config(vim.fs.joinpath(dir, '.ruff.toml')) then return true end
+    return pyproject_has_ruff_format(dir)
+  end
+
   for _, marker in ipairs(family_markers(family)) do
     if file_exists(vim.fs.joinpath(dir, marker)) then return true end
   end
@@ -148,9 +210,31 @@ local function project_formatters(bufnr, filetype)
   if family == 'prettier' then return { 'project_prettierd', 'project_prettier', stop_after_first = true } end
   if family == 'oxfmt' then return { 'project_oxfmt' } end
   if family == 'biome' then return { 'project_biome' } end
+  if family == 'ruff' then return { 'project_ruff_organize_imports', 'project_ruff_format' } end
 end
 
 local function project_formatters_or_empty(bufnr, filetype) return project_formatters(bufnr, filetype) or {} end
+
+local function resolve_formatters(entry)
+  if vim.islist(entry) then return vim.deepcopy(entry) end
+
+  return function(bufnr)
+    local formatters = type(entry.project) == 'string' and project_formatters_or_empty(bufnr, entry.project) or {}
+    if #formatters > 0 then return formatters end
+    if vim.islist(entry.fallback) then return vim.deepcopy(entry.fallback) end
+    return {}
+  end
+end
+
+local function formatters_by_ft()
+  local resolved = {}
+
+  for filetype, entry in pairs(lang.formatters_by_ft) do
+    resolved[filetype] = resolve_formatters(entry)
+  end
+
+  return resolved
+end
 
 local function format_on_save(bufnr)
   if vim.g.enable_format_on_save ~= true then return nil end
@@ -165,7 +249,7 @@ local function format_on_save(bufnr)
   if disabled[vim.bo[bufnr].filetype] then return nil end
 
   return {
-    timeout_ms = 500,
+    timeout_ms = 3000,
     lsp_format = 'fallback',
   }
 end
@@ -207,19 +291,18 @@ Lib.now(function()
         cwd = function(_, ctx) return formatter_root(ctx.buf, 'biome') end,
         require_cwd = true,
       },
+      project_ruff_organize_imports = {
+        inherit = 'ruff_organize_imports',
+        cwd = function(_, ctx) return formatter_root(ctx.buf, 'ruff') end,
+        require_cwd = true,
+      },
+      project_ruff_format = {
+        inherit = 'ruff_format',
+        cwd = function(_, ctx) return formatter_root(ctx.buf, 'ruff') end,
+        require_cwd = true,
+      },
     },
-    formatters_by_ft = {
-      lua = { 'stylua' },
-      sh = { 'shfmt' },
-      bash = { 'shfmt' },
-      zsh = { 'shfmt' },
-      markdown = function(bufnr) return project_formatters(bufnr, 'markdown') or { 'mdformat' } end,
-      toml = function(bufnr) return project_formatters(bufnr, 'toml') or { 'taplo' } end,
-      json = function(bufnr) return project_formatters_or_empty(bufnr, 'json') end,
-      jsonc = function(bufnr) return project_formatters_or_empty(bufnr, 'jsonc') end,
-      yaml = function(bufnr) return project_formatters_or_empty(bufnr, 'yaml') end,
-      ['yaml.docker-compose'] = function(bufnr) return project_formatters_or_empty(bufnr, 'yaml.docker-compose') end,
-    },
+    formatters_by_ft = formatters_by_ft(),
   })
 end)
 

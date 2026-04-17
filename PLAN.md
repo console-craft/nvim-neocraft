@@ -44,6 +44,7 @@
 - `lua/neocraft/core/pack.lua`
 - `lua/neocraft/core/root.lua`
 - `lua/neocraft/core/sessions.lua`
+- `lua/neocraft/lang/*.lua`
 - `lua/neocraft/plugins/mini.lua`
 - `lua/neocraft/plugins/treesitter.lua`
 - `lua/neocraft/plugins/lsp.lua`
@@ -54,7 +55,6 @@
 - `scripts/checks.sh`
 - `scripts/live_luals.lua`
 - Optional later:
-  - `lua/neocraft/lang/*.lua`
   - `snippets/` and `after/snippets/`
 
 ## Architecture Rules
@@ -371,10 +371,14 @@
   - add `gW` for workspace symbols on `LspAttach`
   - remap Insert-mode signature help to `<C-k>` on `LspAttach`
 - Use `<Leader>c` as the small code namespace for the actions that do not map as cleanly to native motions:
-  - `<Leader>ca` show LSP clients attached to the current buffer
   - `<Leader>cd` line diagnostics float
   - `<Leader>cf` format current buffer
-  - `<Leader>ci` LSP info
+  - `<Leader>cl...` logs/info subgroup:
+    - `<Leader>cla` show LSP clients attached to the current buffer
+    - `<Leader>clc` Conform info
+    - `<Leader>cll` LSP info
+- Keep `K` as an explicit buffer-local hover mapping on `LspAttach` when supported.
+- Keep `gD` as general declaration by default, and allow language-specific overrides where they are clearly stronger (for example `vtsls` source definition).
 - Add a buffer-local `mini.clue` `+Code` group during `LspAttach` and refresh clue triggers after attaching.
 - Surface the main coding motions/actions in the curated action picker (`<C-p>`) under a `Coding` group so the less-obvious LSP flows stay discoverable.
 - Default LSP visuals landed as:
@@ -389,7 +393,7 @@
   - send `workspace/willRenameFiles` and `workspace/didRenameFiles` from the LSP side after the file operation succeeds, accepting that `willRenameFiles` is necessarily late when driven by `mini.files` public events
 - If tests or debug workflows are later added, fit them under `<Leader>c` only when they prove common enough.
 - Keep a local `:LspInfo` user command alias to `:checkhealth vim.lsp`, because Neovim `0.12` already owns the built-in `:lsp` command family and `nvim-lspconfig` no longer guarantees its old helper commands.
-- Add a local `:LspAttached [bufnr]` command to show clients attached to a specific buffer without scanning full `:checkhealth vim.lsp` output.
+- Add a local `:LspAttached [bufnr]` command to show clients attached to a specific buffer in a scratch tab without scanning full `:checkhealth vim.lsp` output.
 
 ### Stage 10: Server-Specific LSP Files
 
@@ -400,10 +404,16 @@
   - `after/lsp/yamlls.lua` with `SchemaStore.nvim`, formatting/validation settings, and a detach guard so specialized workflow/compose servers own those YAML subtypes
   - `after/lsp/jsonls.lua` with `SchemaStore.nvim`-backed schemas and validation
   - `after/lsp/copilot.lua` with a non-`.git` root fallback so native Copilot can work from detected project roots or file directories
+  - `after/lsp/vtsls.lua` with workspace TypeScript preference, import-update-on-file-move behavior, TS/JS inlay-hint settings, and TS code-lens enablement
+  - `after/lsp/eslint.lua` with working-directory auto detection and formatting disabled so ESLint stays lint/code-action focused
+  - `after/lsp/biome.lua` with config-aware attach guards so Biome stands down when ESLint config is present
+  - `after/lsp/oxlint.lua` with config-aware attach guards so Oxlint stands down when ESLint or Biome config is present
+  - `after/lsp/basedpyright.lua` with conservative analysis settings and organize-imports disabled in favor of Ruff/formatting tools
+  - `after/lsp/ruff.lua` with hover disabled so `basedpyright` remains the primary semantic server
   - keep specialist-but-generic servers like `gh_actions_ls`, `dockerls`, and `docker_compose_language_service` as plain `{}` entries unless they earn explicit overrides later
-- Intentionally defer JavaScript/TypeScript and Python server selection to Stage 13 language profiles:
-  - TS choice stays open between `ts_ls`, `vtsls`, or another workflow-specific option
-  - Python choice stays open between `pyright`, `basedpyright`, or another workflow-specific option
+- JS/TS and Python server selection is no longer deferred:
+  - JS/TS uses `vtsls`, with `eslint` / `biome` / `oxlint` as config-aware lint companions
+  - Python uses `basedpyright` + `ruff`
 
 ### Stage 11: Completion And Snippets
 
@@ -468,7 +478,7 @@
 - Stage 12 landed as:
   - `conform.nvim` owns formatting through `lua/neocraft/plugins/format.lua`, while `config/keymaps.lua` owns the global entrypoints:
     - `<Leader>cf` formats the current buffer
-    - `<Leader>cc` opens `:ConformInfo`
+    - `<Leader>clc` opens `:ConformInfo`
   - formatter resolution is explicit and root-aware:
     - nearest matching project formatter config wins inside the detected project
     - when multiple formatter families are configured in the same directory, prefer `prettier` over `oxfmt` over `biome`
@@ -481,6 +491,8 @@
     - `sh` / `bash` / `zsh` -> `shfmt`
     - `toml` -> project formatter family when configured, otherwise `taplo`
     - `markdown` -> project formatter family when configured, otherwise `mdformat`
+    - `javascript` / `javascriptreact` / `typescript` / `typescriptreact` -> project formatter family when configured, otherwise LSP formatting
+    - `python` -> explicit Ruff format config uses `ruff_organize_imports`, then `ruff_format`; otherwise `isort`, then `black`
     - `json` / `jsonc` / `yaml` / `yaml.docker-compose` -> project formatter family when configured, otherwise LSP formatting
   - `formatexpr` is now routed through Conform globally so formatter-aware `gq` can use the same resolver policy
   - prose formatting behavior landed as:
@@ -488,23 +500,74 @@
     - `text` and `gitcommit` clear local `formatexpr` and keep built-in text reflow for `gq`
     - intentionally skip `commitmsgfmt`; commit messages stay plain-text style
   - autoformat-on-save is enabled through Conform for code/data buffers and intentionally skipped for prose-style buffers:
-    - save-format on: `lua`, `sh`, `bash`, `zsh`, `toml`, `json`, `jsonc`, `yaml`, `yaml.docker-compose`
+    - save-format on: `lua`, `sh`, `bash`, `zsh`, `toml`, `json`, `jsonc`, `yaml`, `yaml.docker-compose`, `javascript`, `javascriptreact`, `typescript`, `typescriptreact`, `python`
     - save-format off: `markdown`, `text`, `gitcommit`, and non-file buffers
   - Mason tool installation now includes the formatter binaries needed for this layer, including `prettierd`, `prettier`, `oxfmt`, `biome`, and `mdformat`
+  - save-time formatting now uses the same `3000ms` timeout as manual formatting to avoid surprising behavior differences
 
 ### Stage 13: V1 Language Profiles
 
-- First-class language/tooling groups:
-  - Core authoring: Lua, Markdown, JSON/YAML, TOML, Bash, Git commit messages
-  - JavaScript/TypeScript
-  - Python
-- Each group should define:
-  - LSP servers
-  - formatter tools
-  - any filetype-specific UX tweaks
-- Core authoring filetypes should likely carry local width rules, like Markdown/Text using `textwidth = 80` and `colorcolumn = "+1"`, while code keeps the global `colorcolumn = "120"` guide.
-- Keep these grouped cleanly so future languages can be added without bloating core files.
-- Consider `mini.hipatterns` here for authoring-focused pattern highlights like TODO/NOTE markers and color literals.
+- Landed shape:
+  - add an explicit `lua/neocraft/lang/*.lua` layer:
+    - `lua/neocraft/lang/init.lua`
+    - `lua/neocraft/lang/authoring.lua`
+    - `lua/neocraft/lang/typescript.lua`
+    - `lua/neocraft/lang/python.lua`
+  - keep `lang/*.lua` declarative:
+    - `servers`
+    - `tools`
+    - `formatters_by_ft`
+  - keep runtime behavior in:
+    - `lua/neocraft/plugins/lsp.lua`
+    - `lua/neocraft/plugins/format.lua`
+    - `after/lsp/*.lua`
+    - `after/ftplugin/*.lua`
+  - `lang/init.lua` now merges active profiles, errors on duplicate `servers` / `formatters_by_ft`, and dedupes `tools`
+
+- Core authoring profile:
+  - owns the shared baseline servers and cross-filetype formatter tools
+  - keeps `prettier`, `prettierd`, `oxfmt`, and `biome` as shared formatter binaries rather than duplicating them in JS/TS-specific profile data
+
+- TypeScript landed as:
+  - `vtsls` as the primary JS/TS language server
+  - `eslint`, `biome`, and `oxlint` available as config-aware lint companions
+  - lint-server precedence is conservative and config-driven:
+    - ESLint over Biome
+    - Biome over Oxlint
+  - lint servers now use upstream default filetypes, while attach guards prevent duplicate ownership when multiple configs coexist
+  - formatter coverage includes:
+    - `javascript`
+    - `javascriptreact`
+    - `typescript`
+    - `typescriptreact`
+  - TS-specific actions landed as:
+    - `gD` source definition
+    - `gR` file references
+    - `<Leader>clt` open TS server log
+    - `<Leader>cO` organize imports
+    - `<Leader>cM` add missing imports
+    - `<Leader>cU` remove unused imports
+    - `<Leader>cR` restart TS server
+    - `<Leader>cV` select workspace TypeScript version
+  - TS-specific commands landed as:
+    - `:TypeScriptVersion`
+    - `:TypeScriptOpenLog`
+    - `:TypeScriptRestart`
+  - TS fix-all mappings were intentionally dropped after proving less reliable than explicit code actions
+
+- Python landed as:
+  - `basedpyright` + `ruff`
+  - `black` + `isort`
+  - `basedpyright` remains the primary semantic server
+  - `ruff` owns lint diagnostics and import-organization/fix code actions
+  - explicit Ruff format config switches formatting/import sorting to `ruff_organize_imports`, then `ruff_format`; otherwise Neocraft falls back to `isort`, then `black`
+  - Python-specific action currently exposed:
+    - `<Leader>cO` organize imports through Ruff
+    - `<Leader>cV` select the active virtual environment through `venv-selector.nvim`
+  - Python fix-all mapping was intentionally dropped after proving less reliable than explicit code actions
+
+- Core authoring filetypes still use `after/ftplugin/*.lua` for local width and prose behavior.
+- `mini.hipatterns` remains deferred for now.
 
 ### Stage 14: Quality And Health
 
@@ -542,7 +605,7 @@
 - Completion: `mini.completion` + native Copilot ghost text
 - NES: `copilot-lsp` helper on top of native Copilot, Normal-mode focused and explicitly wired
 - Snippets: built-in `vim.snippet` first; add a snippet library later only if it earns its keep
-- Formatting: `conform.nvim`, with project-aware formatter config detection, formatter-aware Markdown, built-in `gq` for plain text / git commit messages, and conservative autoformat-on-save for code/data buffers
+- Formatting: `conform.nvim`, with project-aware formatter config detection, JS/TS project-formatter support, Python Ruff-format detection with `isort -> black` fallback, formatter-aware Markdown, built-in `gq` for plain text / git commit messages, and matching `3000ms` save/manual formatting timeouts
 - Linting: LSP diagnostics first
 - Roots: helper only, no cwd auto-switch
 - Sessions: global XDG state storage by project-root mapping
@@ -551,7 +614,9 @@
 - Worktrees: centralized under `~/.worktrees` with project-derived slugs and picker-driven add/remove/yank/copy-file flows
 - Focus list: `mini.visits` with root-scoped file labels
 - Terminal: one reusable floating terminal on `<C-/>`
-- Hidden actions: curated picker on `<C-p>` for global non-`<Leader>` mappings
+- Python environments: `venv-selector.nvim` with `mini-pick`, cached per-workspace activation, and `<Leader>cV` as the Python environment selector
+- Hidden actions: curated picker on `<C-p>` for global non-`<Leader>` mappings and discoverable language-specific actions
+- Code namespace: `<Leader>cl...` for logs/info (`cla`, `clc`, `cll`, `clt`)
 - Lists: `<Leader>ln` for notifications history, `<Leader>lp` for `vim.pack` summary
 - Discoverability: `mini.clue`
 - UI/status: mini modules first

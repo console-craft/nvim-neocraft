@@ -24,6 +24,7 @@ local function nmap_leader(lhs, rhs, desc, opts) nmap('<leader>' .. lhs, rhs, de
 local leader_group_clues = {
   { mode = 'n', keys = '<Leader>b', desc = '+Buffer' },
   { mode = 'n', keys = '<Leader>c', desc = '+Code' },
+  { mode = 'n', keys = '<Leader>cl', desc = '+Logs' },
   { mode = 'n', keys = '<Leader>g', desc = '+Git' },
   { mode = 'n', keys = '<Leader>gR', desc = '+Remove' },
   { mode = 'n', keys = '<Leader>gb', desc = '+Bisect' },
@@ -450,8 +451,8 @@ nmap_leader('v', '<C-w>v', 'Split right')
 nmap_leader('q', '<C-w>c', 'Close window')
 
 -- Code namespace
-nmap_leader('cc', function() require('neocraft.plugins.format').info() end, 'Formatting info')
 nmap_leader('cf', function() require('neocraft.plugins.format').format() end, 'Format buffer')
+nmap_leader('clc', function() require('neocraft.plugins.format').info() end, 'Conform info')
 
 -- Buffer namespace
 nmap_leader('ba', '<cmd>e #<cr>', 'Alternate buffer')
@@ -546,7 +547,7 @@ nmap(']p', '<Cmd>exe "iput "  . v:register<CR>', 'Paste Below')
 nmap('gV', '`[v`]', 'Reselect last paste/change')
 xmap('p', 'P', 'Paste without yanking replaced selection')
 
-nmap('gd', '<C-]>', 'Goto definition or tag')
+nmap('gd', '<C-]>', 'Go to definition / tag')
 
 nmap('<C-s>', '<Cmd>silent! update | redraw<CR>', 'Save')
 imap('<C-s>', '<Esc><Cmd>silent! update | redraw<CR>', 'Save and go to Normal mode')
