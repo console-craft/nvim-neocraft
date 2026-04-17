@@ -292,7 +292,7 @@
   - use a dedicated `focus` label for the curated list
   - `<Leader><Leader>` open the current project focus list
   - `<Leader>xa` add current file to the focus list
-  - `<Leader>xc` remove current file from the focus list
+  - `<Leader>xr` remove current file from the focus list
   - `<Leader>xd` clear the current project focus list
 - Land the first full `<Leader>g` workflow families here as `mini.git` and `mini.diff` become available.
 - Keep `go` as the contextual Git "open at cursor" action backed by `mini.git.show_at_cursor()`.
@@ -567,7 +567,6 @@
   - Python fix-all mapping was intentionally dropped after proving less reliable than explicit code actions
 
 - Core authoring filetypes still use `after/ftplugin/*.lua` for local width and prose behavior.
-- `mini.hipatterns` remains deferred for now.
 
 ### Stage 14: Quality And Health
 
@@ -580,6 +579,7 @@
 - Keep `scripts/live_luals.lua` as the source of truth for matching live Neovim LuaLS diagnostics when CLI `lua-language-server --check` drifts from editor behavior.
 - Avoid building a framework; just add enough diagnostics to keep the config maintainable.
 - Optional late-stage polish once the main UX is stable:
+  - `mini.hipatterns` to support tailwind color class highlighting
   - `mini.map` for overview/navigation, after diagnostics and diff integrations are already useful
   - `mini.animate` only if it still feels worth the tradeoffs, since it can introduce visual and performance side effects
   - `mini.base16` if Neocraft wants a small in-repo colorscheme workflow rather than only consuming external themes

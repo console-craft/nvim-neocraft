@@ -536,7 +536,7 @@ nmap_leader('lp', function() require('neocraft.core.pack').show_pack() end, 'Plu
 -- Focus namespace
 nmap_leader('<Leader>', function() require('neocraft.visits').pick_focus() end, 'Focus list')
 nmap_leader('xa', function() require('neocraft.visits').add_focus() end, 'Add item to focus list')
-nmap_leader('xc', function() require('neocraft.visits').remove_focus() end, 'Clear item from focus list')
+nmap_leader('xr', function() require('neocraft.visits').remove_focus() end, 'Remove item from focus list')
 nmap_leader('xd', function()
   local choice = vim.fn.confirm('Delete all from focus list?', '&Yes\n&No\n&Cancel', 2)
   if choice == 1 then require('neocraft.visits').remove_all_focus() end
