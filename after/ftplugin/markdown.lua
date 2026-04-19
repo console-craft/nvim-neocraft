@@ -1,5 +1,6 @@
-vim.opt_local.conceallevel = 3
-vim.opt_local.concealcursor = 'n'
+-- render-markdown manages conceal behavior for Markdown buffers.
+-- vim.opt_local.conceallevel = 3
+-- vim.opt_local.concealcursor = 'n'
 
 if vim.bo.buftype == '' then
   vim.opt_local.colorcolumn = '+1'

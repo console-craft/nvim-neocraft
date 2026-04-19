@@ -43,6 +43,18 @@ Lib.autocmd('TermOpen', {
   end,
 })
 
+Lib.autocmd({ 'BufWinEnter', 'WinEnter' }, {
+  group = group,
+  desc = 'Show cursorline in the active window',
+  callback = function() vim.wo.cursorline = true end,
+})
+
+Lib.autocmd('WinLeave', {
+  group = group,
+  desc = 'Hide cursorline in non-active windows',
+  callback = function() vim.wo.cursorline = false end,
+})
+
 Lib.autocmd('ModeChanged', {
   pattern = '*:[V\x16]*',
   group = group,

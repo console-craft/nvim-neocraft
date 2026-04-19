@@ -77,7 +77,7 @@ function M.remove_focus(buf)
   local cwd = current_root(buf)
   require('mini.visits').remove_label(focus_label, path, cwd)
   require('mini.visits').write_index()
-  vim.notify('Removed file from focus list', vim.log.levels.INFO)
+  vim.notify('Deleted file from focus list', vim.log.levels.INFO)
 end
 
 local function notify_missing_project(action) vim.notify('No project root for focus ' .. action, vim.log.levels.WARN) end
@@ -98,7 +98,7 @@ function M.remove_all_focus(buf)
 
   mini_visits.remove_label(focus_label, '', cwd)
   mini_visits.write_index()
-  vim.notify('Deleted all from focus list', vim.log.levels.INFO)
+  vim.notify('Cleared focus list', vim.log.levels.INFO)
 end
 
 function M.register_current(buf)

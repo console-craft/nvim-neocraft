@@ -250,14 +250,14 @@ end
 function M.toggle_codelens()
   local bufnr = vim.api.nvim_get_current_buf()
   if not any_client_supports_method(bufnr, Methods.textDocument_codeLens) then
-    vim.notify('No attached LSP client supports code lens for this buffer', vim.log.levels.INFO)
+    vim.notify('No attached LSP client supports codelens for this buffer', vim.log.levels.INFO)
     return
   end
 
   local enabled = vim.b[bufnr].neocraft_codelens_enabled == true
   vim.b[bufnr].neocraft_codelens_enabled = not enabled
   reset_codelens(bufnr)
-  vim.api.nvim_echo({ { (enabled and 'Disabled: ' or 'Enabled: ') .. 'code lens', 'Normal' } }, false, {})
+  vim.api.nvim_echo({ { (enabled and 'Disabled: ' or 'Enabled: ') .. 'codelens', 'Normal' } }, false, {})
 end
 
 local function hide_buffer_annotations(bufnr)
@@ -919,6 +919,10 @@ if vim.fn.exists(':LspAttached') ~= 2 then
   })
 end
 
+local function inlay_hints_enabled() return vim.g.enable_inlay_hints == true end
+
+local function codelens_enabled() return vim.g.enable_codelens == true end
+
 local function inline_completions_enabled() return vim.g.enable_inline_completions == true end
 
 Lib.autocmd('LspAttach', {
@@ -974,11 +978,11 @@ Lib.autocmd('LspAttach', {
 
     map('n', '<Leader>cll', '<Cmd>LspInfo<CR>', 'LSP info')
 
-    if client:supports_method(Methods.textDocument_inlayHint, bufnr) then
+    if inlay_hints_enabled() and client:supports_method(Methods.textDocument_inlayHint, bufnr) then
       if vim.b[bufnr].neocraft_inlay_hints_enabled == nil then vim.b[bufnr].neocraft_inlay_hints_enabled = true end
     end
 
-    if client:supports_method(Methods.textDocument_codeLens, bufnr) then
+    if codelens_enabled() and client:supports_method(Methods.textDocument_codeLens, bufnr) then
       if vim.b[bufnr].neocraft_codelens_enabled == nil then vim.b[bufnr].neocraft_codelens_enabled = true end
     end
 

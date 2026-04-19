@@ -12,6 +12,8 @@ vim.g.mapleader                  = ' '                              -- Use `<Spa
 vim.g.markdown_recommended_style = 0                                -- Disable legacy markdown style defaults
 vim.g.have_nerd_font             = true                             -- Enable icons in the UI
 vim.g.enable_format_on_save      = true                             -- Enable save-time formatting at startup
+vim.g.enable_inlay_hints         = true                             -- Enable inlay hints at startup
+vim.g.enable_codelens            = false                            -- Disable codelens at startup
 vim.g.enable_inline_completions  = true                             -- Enable native Copilot inline completions at startup
 vim.g.enable_NES                 = true                             -- Enable Copilot NES integration at startup
 
@@ -34,13 +36,13 @@ opt.timeoutlen                   = 500                              -- Decrease 
 
 opt.number                       = true                             -- Show line numbers
 opt.laststatus                   = 3                                -- Show a global statusline.
-opt.winbar                       = "%f"                             -- Show file path in the window bar.
+opt.winbar                       = "%{%v:lua.require('neocraft.winbar').render()%}" -- Show project-root-aware path in the window bar.
 opt.shortmess:append({ W = true, I = true, c = true, C = true })    -- Suppress unnecessary messages for a cleaner UI.
 opt.relativenumber               = false                            -- Don't show relative line numbers by default
 opt.showmode                     = false                            -- Don't show mode in command line
 opt.ruler                        = false                            -- Don't show cursor position in command line
 opt.signcolumn                   = 'yes'                            -- Always show signcolumn
-opt.cursorline                   = true                             -- Enable current line highlighting
+opt.cursorline                   = false                            -- Let focused-window autocmds own current line highlighting
 opt.cursorlineopt                = 'screenline,number'              -- Focus cursorline on the active screen line and number column
 opt.scrolloff                    = 2                                -- Lines of context
 opt.sidescrolloff                = 8                                -- Columns of context for long lines

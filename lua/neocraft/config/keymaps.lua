@@ -94,6 +94,21 @@ local function dismiss_nes_or_clear_escape()
   require('neocraft.actions').clear_on_escape()
 end
 
+local function refresh_minimap_search()
+  local ok, minimap = pcall(require, 'mini.map')
+  if ok then minimap.refresh({}, { lines = false, scrollbar = false }) end
+end
+
+local function search_motion_with_minimap_refresh(key)
+  return function()
+    local prefix = vim.v.count > 0 and tostring(vim.v.count) or ''
+
+    vim.cmd.normal({ args = { prefix .. key }, bang = true })
+    vim.cmd.normal({ args = { 'zv' }, bang = true })
+    refresh_minimap_search()
+  end
+end
+
 local function reset_inline_completion(bufnr)
   if not inline_completions_enabled() then return false end
 
@@ -257,6 +272,18 @@ local function toggle_background()
 end
 
 local function toggle_conceallevel()
+  local bufnr = vim.api.nvim_get_current_buf()
+
+  if vim.bo[bufnr].filetype == 'markdown' then
+    local render_markdown = require('render-markdown')
+    local render_markdown_state = require('render-markdown.state')
+    local enabled = render_markdown_state.get(bufnr).enabled
+
+    render_markdown.buf_toggle()
+    show_toggle_state(get_toggle_text('markdown render', not enabled))
+    return
+  end
+
   if vim.wo.conceallevel == 0 then
     vim.wo.conceallevel = 3
     vim.opt_local.concealcursor = 'n'
@@ -411,6 +438,10 @@ nmap('<C-/>', function() require('neocraft.terminal').toggle() end, 'Toggle floa
 nmap('<C-_>', function() require('neocraft.terminal').toggle() end, 'Toggle floating terminal')
 nmap('<C-x>', function() require('neocraft.plugins.mini').open_files() end, 'Toggle file explorer')
 nmap('<C-Space>', function() require('neocraft.plugins.git').toggle_overlay() end, 'Toggle diff overlay')
+nmap('n', search_motion_with_minimap_refresh('n'), 'Next search match')
+nmap('N', search_motion_with_minimap_refresh('N'), 'Prev search match')
+nmap('*', search_motion_with_minimap_refresh('*'), 'Search word forward')
+nmap('#', search_motion_with_minimap_refresh('#'), 'Search word backward')
 nmap('[h', function() require('neocraft.plugins.git').goto_hunk('prev') end, 'Prev Git hunk')
 nmap(']h', function() require('neocraft.plugins.git').goto_hunk('next') end, 'Next Git hunk')
 nmap('[H', function() require('neocraft.plugins.git').goto_hunk('first') end, 'First Git hunk')
@@ -431,6 +462,7 @@ nmap('\\f', toggle_format_on_save, 'Toggle format on save')
 nmap('\\h', function() require('neocraft.plugins.lsp').toggle_inlay_hints() end, 'Toggle inlay hints')
 nmap('\\i', function() toggle_global_option('ignorecase') end, 'Toggle ignorecase')
 nmap('\\l', function() require('neocraft.plugins.lsp').toggle_codelens() end, 'Toggle code lens')
+nmap('\\m', function() require('mini.map').toggle() end, 'Toggle minimap')
 nmap('\\n', function() toggle_window_option('number') end, 'Toggle line numbers')
 nmap('\\r', function() toggle_window_option('relativenumber') end, 'Toggle relative numbers')
 nmap('\\s', function() toggle_window_option('spell') end, 'Toggle spell checking')
@@ -456,7 +488,7 @@ nmap_leader('clc', function() require('neocraft.plugins.format').info() end, 'Co
 
 -- Buffer namespace
 nmap_leader('ba', '<cmd>e #<cr>', 'Alternate buffer')
-nmap_leader('bd', delete_other_buffers, 'Delete other')
+nmap_leader('bc', delete_other_buffers, 'Close other buffers')
 nmap_leader('br', reload_buffer, 'Reload buffer')
 nmap_leader('bt', set_buffer_filetype, 'Set buffer type')
 nmap_leader('by', yank_relative_path, 'Copy relative path')
@@ -465,7 +497,7 @@ nmap_leader('bY', yank_absolute_path, 'Copy absolute path')
 -- Tabs namespace
 nmap_leader('<Tab><Tab>', 'g<Tab>', 'Alternate tab')
 nmap_leader('<Tab>n', '<Cmd>tabnew<CR>', 'New tab')
-nmap_leader('<Tab>d', '<Cmd>tabonly<CR>', 'Delete other tabs')
+nmap_leader('<Tab>c', '<Cmd>tabonly<CR>', 'Close other tabs')
 nmap_leader('<Tab>q', '<Cmd>tabclose<CR>', 'Close tab')
 
 -- Git namespaces
@@ -525,22 +557,29 @@ nmap_leader('lc', function()
   local success, err = pcall(vim.cmd.copen)
   if not success and err then vim.notify(err, vim.log.levels.ERROR) end
 end, 'Quickfix')
-nmap_leader('ln', function() require('mini.notify').show_history() end, 'Notifications')
+nmap_leader('ln', function()
+  vim.cmd.tabnew()
+  require('mini.notify').show_history()
+end, 'Notifications')
 nmap_leader('ll', function()
   vim.diagnostic.setloclist()
   local success, err = pcall(vim.cmd.lopen)
   if not success and err then vim.notify(err, vim.log.levels.ERROR) end
 end, 'Location')
-nmap_leader('lp', function() require('neocraft.core.pack').show_pack() end, 'Plugins')
+nmap_leader('lp', function()
+  vim.cmd.tabnew()
+  require('neocraft.core.pack').show_pack()
+end, 'Plugins')
+nmap_leader('lt', function() require('neocraft.pickers').todos() end, 'TODOs')
 
 -- Focus namespace
 nmap_leader('<Leader>', function() require('neocraft.visits').pick_focus() end, 'Focus list')
-nmap_leader('xa', function() require('neocraft.visits').add_focus() end, 'Add item to focus list')
-nmap_leader('xr', function() require('neocraft.visits').remove_focus() end, 'Remove item from focus list')
-nmap_leader('xd', function()
-  local choice = vim.fn.confirm('Delete all from focus list?', '&Yes\n&No\n&Cancel', 2)
+nmap_leader('xa', function() require('neocraft.visits').add_focus() end, 'Add to focus list')
+nmap_leader('xd', function() require('neocraft.visits').remove_focus() end, 'Delete from focus list')
+nmap_leader('xc', function()
+  local choice = vim.fn.confirm('Clear focus list?', '&Yes\n&No\n&Cancel', 2)
   if choice == 1 then require('neocraft.visits').remove_all_focus() end
-end, 'Delete all from focus list')
+end, 'Clear focus list')
 
 nmap('[p', '<Cmd>exe "iput! " . v:register<CR>', 'Paste Above')
 nmap(']p', '<Cmd>exe "iput "  . v:register<CR>', 'Paste Below')

@@ -141,6 +141,266 @@ end)
 Lib.later(function() require('mini.extra').setup() end)
 
 -- ┌───────────────────────────────────────────┐
+-- │ mini.hipatterns                           │
+-- └───────────────────────────────────────────┘
+
+Lib.later(function()
+  local hipatterns = require('mini.hipatterns')
+
+  local function trim(value) return (value:gsub('^%s+', ''):gsub('%s+$', '')) end
+
+  local function split_commas(value)
+    local parts = {}
+
+    for part in value:gmatch('[^,]+') do
+      parts[#parts + 1] = trim(part)
+    end
+
+    return parts
+  end
+
+  local function split_spaces(value)
+    local parts = {}
+
+    for part in value:gmatch('%S+') do
+      parts[#parts + 1] = part
+    end
+
+    return parts
+  end
+
+  local function parse_alpha(value)
+    if value == nil or value == '' then return true end
+
+    if vim.endswith(value, '%') then
+      local percent = tonumber(value:sub(1, -2))
+      return percent ~= nil and percent >= 0 and percent <= 100
+    end
+
+    local alpha = tonumber(value)
+    return alpha ~= nil and alpha >= 0 and alpha <= 1
+  end
+
+  local function parse_rgb_channel(value)
+    if vim.endswith(value, '%') then
+      local percent = tonumber(value:sub(1, -2))
+      if percent == nil or percent < 0 or percent > 100 then return nil end
+
+      return math.floor((255 * percent / 100) + 0.5)
+    end
+
+    local channel = tonumber(value)
+    if channel == nil or channel < 0 or channel > 255 then return nil end
+
+    return math.floor(channel + 0.5)
+  end
+
+  local function parse_hue(value)
+    local hue = value
+    if vim.endswith(hue, 'deg') then hue = hue:sub(1, -4) end
+
+    hue = tonumber(hue)
+    if hue == nil then return nil end
+
+    return (hue % 360) / 360
+  end
+
+  local function parse_percentage(value)
+    if not vim.endswith(value, '%') then return nil end
+
+    local percent = tonumber(value:sub(1, -2))
+    if percent == nil or percent < 0 or percent > 100 then return nil end
+
+    return percent / 100
+  end
+
+  local function hue_to_rgb(p, q, t)
+    if t < 0 then t = t + 1 end
+    if t > 1 then t = t - 1 end
+    if t < 1 / 6 then return p + ((q - p) * 6 * t) end
+    if t < 1 / 2 then return q end
+    if t < 2 / 3 then return p + ((q - p) * ((2 / 3) - t) * 6) end
+    return p
+  end
+
+  local function hsl_to_hex(h, s, l)
+    if s == 0 then
+      local channel = math.floor((l * 255) + 0.5)
+      return string.format('#%02x%02x%02x', channel, channel, channel)
+    end
+
+    local q = l < 0.5 and (l * (1 + s)) or (l + s - (l * s))
+    local p = 2 * l - q
+
+    local r = math.floor((255 * hue_to_rgb(p, q, h + (1 / 3))) + 0.5)
+    local g = math.floor((255 * hue_to_rgb(p, q, h)) + 0.5)
+    local b = math.floor((255 * hue_to_rgb(p, q, h - (1 / 3))) + 0.5)
+
+    return string.format('#%02x%02x%02x', r, g, b)
+  end
+
+  local function parse_css_body(match, names)
+    local body
+    for _, name in ipairs(names) do
+      body = match:match('^' .. name .. '%((.*)%)$')
+      if body ~= nil then break end
+    end
+
+    return body and trim(body) or nil
+  end
+
+  local function parse_function_parts(body)
+    if body:find(',', 1, true) then return split_commas(body) end
+
+    local components, alpha = body:match('^(.-)%s*/%s*(.-)$')
+    local parts = split_spaces(components or body)
+    if alpha ~= nil then parts[#parts + 1] = trim(alpha) end
+
+    return parts
+  end
+
+  local function css_function_color_group(_, match)
+    local rgb_body = parse_css_body(match, { 'rgb', 'rgba' })
+    if rgb_body ~= nil then
+      local parts = parse_function_parts(rgb_body)
+      if #parts ~= 3 and #parts ~= 4 then return nil end
+      if not parse_alpha(parts[4]) then return nil end
+
+      local r = parse_rgb_channel(parts[1])
+      local g = parse_rgb_channel(parts[2])
+      local b = parse_rgb_channel(parts[3])
+      if r == nil or g == nil or b == nil then return nil end
+
+      local hex = string.format('#%02x%02x%02x', r, g, b)
+      return hipatterns.compute_hex_color_group(hex, 'bg')
+    end
+
+    local hsl_body = parse_css_body(match, { 'hsl', 'hsla' })
+    if hsl_body == nil then return nil end
+
+    local parts = parse_function_parts(hsl_body)
+    if #parts ~= 3 and #parts ~= 4 then return nil end
+    if not parse_alpha(parts[4]) then return nil end
+
+    local h = parse_hue(parts[1])
+    local s = parse_percentage(parts[2])
+    local l = parse_percentage(parts[3])
+    if h == nil or s == nil or l == nil then return nil end
+
+    return hipatterns.compute_hex_color_group(hsl_to_hex(h, s, l), 'bg')
+  end
+
+  -- category:  Dialog    Documentation   Planning      CI        Refactor      Code
+  -- red:       ERROR     DANGER          CRITICAL      FAIL      BUG           FIXME
+  -- orange:    WARNING   CAUTION         IMPORTANT     WARN      DEPRECATED    WIP
+  -- yellow:    TEMP      TEMPORARY       TODO          SKIP      PATCH         XXX
+  -- green:     SUCCESS   COMPLETED       DONE          OK        FIXES         FIX
+  -- blue:      INFO      HINT            NOTE          TIP       EXAMPLE       DOCS
+
+  hipatterns.setup({
+    highlighters = {
+      error = { pattern = '%f[%w]()ERROR()%f[%W]', group = 'MiniHipatternsFixme' },
+      danger = { pattern = '%f[%w]()DANGER()%f[%W]', group = 'MiniHipatternsFixme' },
+      critical = { pattern = '%f[%w]()CRITICAL()%f[%W]', group = 'MiniHipatternsFixme' },
+      fail = { pattern = '%f[%w]()FAIL()%f[%W]', group = 'MiniHipatternsFixme' },
+      bug = { pattern = '%f[%w]()BUG()%f[%W]', group = 'MiniHipatternsFixme' },
+      fixme = { pattern = '%f[%w]()FIXME()%f[%W]', group = 'MiniHipatternsFixme' },
+      warning = { pattern = '%f[%w]()WARNING()%f[%W]', group = 'MiniHipatternsHack' },
+      caution = { pattern = '%f[%w]()CAUTION()%f[%W]', group = 'MiniHipatternsHack' },
+      important = { pattern = '%f[%w]()IMPORTANT()%f[%W]', group = 'MiniHipatternsHack' },
+      warn = { pattern = '%f[%w]()WARN()%f[%W]', group = 'MiniHipatternsHack' },
+      deprecated = { pattern = '%f[%w]()DEPRECATED()%f[%W]', group = 'MiniHipatternsHack' },
+      wip = { pattern = '%f[%w]()WIP()%f[%W]', group = 'MiniHipatternsHack' },
+      temp = { pattern = '%f[%w]()TEMP()%f[%W]', group = 'MiniHipatternsTodo' },
+      temporary = { pattern = '%f[%w]()TEMPORARY()%f[%W]', group = 'MiniHipatternsTodo' },
+      todo = { pattern = '%f[%w]()TODO()%f[%W]', group = 'MiniHipatternsTodo' },
+      skip = { pattern = '%f[%w]()SKIP()%f[%W]', group = 'MiniHipatternsTodo' },
+      patch = { pattern = '%f[%w]()PATCH()%f[%W]', group = 'MiniHipatternsTodo' },
+      xxx = { pattern = '%f[%w]()XXX()%f[%W]', group = 'MiniHipatternsTodo' },
+      success = { pattern = '%f[%w]()SUCCESS()%f[%W]', group = 'MiniHipatternsOK' },
+      completed = { pattern = '%f[%w]()COMPLETED()%f[%W]', group = 'MiniHipatternsOK' },
+      done = { pattern = '%f[%w]()DONE()%f[%W]', group = 'MiniHipatternsOK' },
+      ok = { pattern = '%f[%w]()OK()%f[%W]', group = 'MiniHipatternsOK' },
+      fixes = { pattern = '%f[%w]()FIXES()%f[%W]', group = 'MiniHipatternsOK' },
+      fix = { pattern = '%f[%w]()FIX()%f[%W]', group = 'MiniHipatternsOK' },
+      info = { pattern = '%f[%w]()INFO()%f[%W]', group = 'MiniHipatternsNote' },
+      hint = { pattern = '%f[%w]()HINT()%f[%W]', group = 'MiniHipatternsNote' },
+      note = { pattern = '%f[%w]()NOTE()%f[%W]', group = 'MiniHipatternsNote' },
+      tip = { pattern = '%f[%w]()TIP()%f[%W]', group = 'MiniHipatternsNote' },
+      example = { pattern = '%f[%w]()EXAMPLE()%f[%W]', group = 'MiniHipatternsNote' },
+      docs = { pattern = '%f[%w]()DOCS()%f[%W]', group = 'MiniHipatternsNote' },
+      hex_color = hipatterns.gen_highlighter.hex_color(),
+      rgb_color = {
+        pattern = {
+          '()%f[%a]rgb%b()()',
+          '()%f[%a]rgba%b()()',
+        },
+        group = css_function_color_group,
+      },
+      hsl_color = {
+        pattern = {
+          '()%f[%a]hsl%b()()',
+          '()%f[%a]hsla%b()()',
+        },
+        group = css_function_color_group,
+      },
+    },
+  })
+end)
+
+-- ┌───────────────────────────────────────────┐
+-- │ mini.map                                  │
+-- └───────────────────────────────────────────┘
+
+Lib.later(function()
+  local map = require('mini.map')
+
+  map.setup({
+    symbols = {
+      encode = map.gen_encode_symbols.dot('4x2'),
+      scroll_line = '┃',
+      scroll_view = '│',
+    },
+    integrations = {
+      map.gen_integration.builtin_search(),
+      map.gen_integration.diff(),
+    },
+    window = {
+      focusable = true,
+      width = 5,
+      winblend = 15,
+      show_integration_count = false,
+      zindex = 50,
+    },
+  })
+
+  map.open()
+end)
+
+-- ┌───────────────────────────────────────────┐
+-- │ mini.animate                              │
+-- └───────────────────────────────────────────┘
+
+Lib.later(function()
+  local animate = require('mini.animate')
+  local normal_scroll_timing = animate.gen_timing.linear({ duration = 110, unit = 'total' })
+  local fast_scroll_timing = animate.gen_timing.linear({ duration = 10, unit = 'total' })
+
+  local function adaptive_scroll_timing(step, total_steps)
+    if total_steps >= 65 then return fast_scroll_timing(step, total_steps) end
+    return normal_scroll_timing(step, total_steps)
+  end
+
+  animate.setup({
+    cursor = { timing = animate.gen_timing.linear({ duration = 10, unit = 'total' }) },
+    scroll = { timing = adaptive_scroll_timing },
+    resize = { enable = false }, -- Resize animation causes issues with terminal buffer display.
+    open = { timing = animate.gen_timing.linear({ duration = 10, unit = 'total' }) },
+    close = { timing = animate.gen_timing.linear({ duration = 10, unit = 'total' }) },
+  })
+end)
+
+-- ┌───────────────────────────────────────────┐
 -- │ mini.completion                           │
 -- └───────────────────────────────────────────┘
 
@@ -435,6 +695,7 @@ Lib.later(function()
 
   mini_pick.setup({ window = { config = win_config } })
   mini_pick.registry.actions = pickers.actions
+  mini_pick.registry.todos = pickers.todos
   mini_pick.registry.autocmds = pickers.autocmds
   mini_pick.registry.grep_cword = pickers.grep_cword
   mini_pick.registry.location_list = pickers.location_list
@@ -513,10 +774,19 @@ end)
 -- └───────────────────────────────────────────┘
 
 Lib.later(function()
-  require('mini.jump2d').setup({
+  local jump2d = require('mini.jump2d')
+  jump2d.setup({
     mappings = {
       start_jumping = 's',
     },
+    spotter = jump2d.builtin_opts.word_start.spotter,
+    allowed_windows = {
+      not_current = false,
+    },
+    allowed_lines = {
+      blank = false,
+    },
+    silent = true,
   })
 end)
 

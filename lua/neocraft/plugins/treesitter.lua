@@ -59,6 +59,7 @@ pack.add('treesitter', {
   { src = 'https://github.com/nvim-treesitter/nvim-treesitter', version = 'main' },
   { src = 'https://github.com/nvim-treesitter/nvim-treesitter-textobjects', version = 'main' },
   { src = 'https://github.com/nvim-treesitter/nvim-treesitter-context' },
+  { src = 'https://github.com/windwp/nvim-ts-autotag' },
 })
 
 pack.on_changed('nvim-treesitter', 'update', function() vim.cmd('TSUpdate') end, 'Update tree-sitter parsers')
@@ -144,17 +145,50 @@ Lib.autocmd('BufWinEnter', {
 })
 
 -- ┌───────────────────────────────────────────┐
+-- │ Treesitter Text Objects                   │
+-- └───────────────────────────────────────────┘
+
+Lib.now(function()
+  require('nvim-treesitter-textobjects').setup({ move = { set_jumps = true } })
+
+  local move = require('nvim-treesitter-textobjects.move')
+
+  local map = function(lhs, rhs, desc) vim.keymap.set('n', lhs, rhs, { silent = true, desc = desc }) end
+
+  map(']f', function() move.goto_next_start('@function.outer') end, 'Next function start')
+  map(']F', function() move.goto_next_end('@function.outer') end, 'Next function end')
+  map('[f', function() move.goto_previous_start('@function.outer') end, 'Prev function start')
+  map('[F', function() move.goto_previous_end('@function.outer') end, 'Prev function end')
+  map(']c', function() move.goto_next_start('@class.outer') end, 'Next class start')
+  map(']C', function() move.goto_next_end('@class.outer') end, 'Next class end')
+  map('[c', function() move.goto_previous_start('@class.outer') end, 'Prev class start')
+  map('[C', function() move.goto_previous_end('@class.outer') end, 'Prev class end')
+  map(']z', function() move.goto_next_start('@fold', 'folds') end, 'Next fold')
+  map('[z', function() move.goto_previous_start('@fold', 'folds') end, 'Prev fold')
+end)
+
+-- ┌───────────────────────────────────────────┐
 -- │ Treesitter Context                        │
 -- └───────────────────────────────────────────┘
 
-Lib.later(
-  function()
-    require('treesitter-context').setup({
-      trim_scope = 'inner',
-      mode = 'topline',
-      max_lines = 2,
-    })
-  end
-)
+Lib.later(function()
+  local ok, context = pcall(require, 'treesitter-context')
+  if not ok then return end
+
+  context.setup({
+    trim_scope = 'inner',
+    mode = 'topline',
+    max_lines = 2,
+  })
+end)
+
+-- ┌───────────────────────────────────────────┐
+-- │ nvim-ts-autotag                           │
+-- └───────────────────────────────────────────┘
+
+Lib.later(function()
+  local ok, autotag = pcall(require, 'nvim-ts-autotag')
+  if ok then autotag.setup({}) end
+end)
 
 return M

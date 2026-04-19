@@ -64,6 +64,10 @@ end
 
 function M.clear_on_escape()
   vim.cmd.nohlsearch()
+
+  local ok, map = pcall(require, 'mini.map')
+  if ok then map.refresh() end
+
   clear_notifications_on_escape()
 end
 

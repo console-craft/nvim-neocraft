@@ -42,7 +42,14 @@ require('neocraft.terminal')
 -- └───────────────────────────────────────────┘
 
 require('neocraft.plugins.mini')
+require('neocraft.plugins.ui')
 require('neocraft.plugins.treesitter')
 require('neocraft.plugins.lsp')
 require('neocraft.plugins.format')
 require('neocraft.plugins.git')
+
+-- ┌───────────────────────────────────────────┐
+-- │ Theme                                     │
+-- └───────────────────────────────────────────┘
+
+vim.cmd.colorscheme('gruvcraft-dark')

@@ -19,6 +19,89 @@ function M.grep_cword(buf, opts)
 end
 
 -- ┌───────────────────────────────────────────┐
+-- │ TODOs custom picker                       │
+-- └───────────────────────────────────────────┘
+
+local todos_picker_ns = vim.api.nvim_create_namespace('neocraft_todos_picker')
+local todos_preview_ns = vim.api.nvim_create_namespace('neocraft_todos_preview')
+
+local todos_highlights = {
+  ERROR = 'MiniHipatternsFixme',
+  DANGER = 'MiniHipatternsFixme',
+  CRITICAL = 'MiniHipatternsFixme',
+  FAIL = 'MiniHipatternsFixme',
+  BUG = 'MiniHipatternsFixme',
+  FIXME = 'MiniHipatternsFixme',
+  WARNING = 'MiniHipatternsHack',
+  CAUTION = 'MiniHipatternsHack',
+  IMPORTANT = 'MiniHipatternsHack',
+  WARN = 'MiniHipatternsHack',
+  DEPRECATED = 'MiniHipatternsHack',
+  WIP = 'MiniHipatternsHack',
+  TEMP = 'MiniHipatternsTodo',
+  TEMPORARY = 'MiniHipatternsTodo',
+  TODO = 'MiniHipatternsTodo',
+  SKIP = 'MiniHipatternsTodo',
+  PATCH = 'MiniHipatternsTodo',
+  XXX = 'MiniHipatternsTodo',
+  INFO = 'MiniHipatternsNote',
+  HINT = 'MiniHipatternsNote',
+  NOTE = 'MiniHipatternsNote',
+  TIP = 'MiniHipatternsNote',
+  EXAMPLE = 'MiniHipatternsNote',
+  DOCS = 'MiniHipatternsNote',
+}
+
+local function highlight_todos(buf_id, ns_id)
+  vim.api.nvim_buf_clear_namespace(buf_id, ns_id, 0, -1)
+
+  local lines = vim.api.nvim_buf_get_lines(buf_id, 0, -1, false)
+  local extmark_opts = { hl_mode = 'combine', priority = 210 }
+
+  for row, line in ipairs(lines) do
+    for word, hl_group in pairs(todos_highlights) do
+      local init = 1
+      while true do
+        local from, to = line:find('%f[%w]' .. word .. '%f[%W]', init)
+        if from == nil then break end
+
+        extmark_opts.hl_group = hl_group
+        extmark_opts.end_row = row - 1
+        extmark_opts.end_col = to
+        vim.api.nvim_buf_set_extmark(buf_id, ns_id, row - 1, from - 1, extmark_opts)
+
+        init = to + 1
+      end
+    end
+  end
+end
+
+local function todos_show(buf_id, items, query)
+  require('mini.pick').default_show(buf_id, items, query)
+  highlight_todos(buf_id, todos_picker_ns)
+end
+
+local function todos_preview(buf_id, item)
+  require('mini.pick').default_preview(buf_id, item)
+  highlight_todos(buf_id, todos_preview_ns)
+end
+
+function M.todos(buf, opts)
+  opts = vim.tbl_deep_extend('force', {
+    buf = buf,
+    source = {
+      name = 'TODOs',
+      preview = todos_preview,
+      show = todos_show,
+    },
+  }, opts or {})
+
+  return mini_api().pick_builtin('grep', {
+    pattern = [[\b(ERROR|DANGER|CRITICAL|FAIL|BUG|FIXME|WARNING|CAUTION|IMPORTANT|WARN|DEPRECATED|WIP|TEMP|TEMPORARY|TODO|SKIP|PATCH|XXX|INFO|HINT|NOTE|TIP|EXAMPLE|DOCS)\b]],
+  }, opts)
+end
+
+-- ┌───────────────────────────────────────────┐
 -- │ autocmd custom picker                     │
 -- └───────────────────────────────────────────┘
 
@@ -222,6 +305,14 @@ local function action_items()
       invoke = "require('neocraft.actions').show_action_picker()",
       desc = 'Open action picker',
       run = function() require('neocraft.actions').show_action_picker() end,
+    },
+    {
+      group = 'Lists',
+      mode = 'n',
+      key = '<Leader>lt',
+      invoke = "require('neocraft.pickers').todos()",
+      desc = 'Project TODOs',
+      run = function() require('neocraft.pickers').todos() end,
     },
     {
       group = 'Editing',
@@ -1229,6 +1320,7 @@ end
 
 local registry_runners = {
   actions = function() M.actions() end,
+  todos = function(buf) M.todos(buf) end,
   files = function(buf) mini_api().pick_files(buf) end,
   grep = function(buf) mini_api().pick_builtin('grep', nil, { buf = buf }) end,
   grep_cword = function(buf) M.grep_cword(buf) end,

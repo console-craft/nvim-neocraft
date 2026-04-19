@@ -2,6 +2,10 @@
 
 set -euo pipefail
 
+# Repo verification entrypoint for Neocraft maintainers and agent-driven
+# verification. This intentionally runs Stylua in write mode before the
+# diagnostic-only checks so later passes see normalized Lua formatting.
+
 ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 
 export XDG_CONFIG_HOME="$(dirname -- "$ROOT_DIR")"

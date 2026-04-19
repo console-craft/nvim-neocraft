@@ -383,7 +383,7 @@
 - Surface the main coding motions/actions in the curated action picker (`<C-p>`) under a `Coding` group so the less-obvious LSP flows stay discoverable.
 - Default LSP visuals landed as:
   - enable inlay hints on `LspAttach` when supported, but keep a per-buffer desired state and temporarily hide them in Insert mode and while `mini.diff` overlay is active
-  - enable code lens on `LspAttach` when supported, with the same per-buffer desired state and temporary hiding rules as inlay hints
+  - enable codelens on `LspAttach` when supported (but don't turn it on by default), with the same per-buffer desired state and temporary hiding rules as inlay hints
   - expose buffer-local toggles on `\h` for inlay hints and `\l` for code lens
 - Revisit `mini.files` file operations here: when files are renamed or moved through `mini.files`, notify supporting LSP clients with `workspace/willRenameFiles` / `workspace/didRenameFiles` so servers can update imports and related references.
 - Keep that integration LSP-owned and explicit in `plugins/lsp.lua`, not embedded as a bigger `mini.files` abstraction.
@@ -578,11 +578,47 @@
 - Land a single repo verification entrypoint in `scripts/checks.sh` that runs `luacheck`, `stylua`, `lua-language-server --check`, and a headless live `lua_ls` parity pass.
 - Keep `scripts/live_luals.lua` as the source of truth for matching live Neovim LuaLS diagnostics when CLI `lua-language-server --check` drifts from editor behavior.
 - Avoid building a framework; just add enough diagnostics to keep the config maintainable.
-- Optional late-stage polish once the main UX is stable:
-  - `mini.hipatterns` to support tailwind color class highlighting
-  - `mini.map` for overview/navigation, after diagnostics and diff integrations are already useful
-  - `mini.animate` only if it still feels worth the tradeoffs, since it can introduce visual and performance side effects
-  - `mini.base16` if Neocraft wants a small in-repo colorscheme workflow rather than only consuming external themes
+- Stage 14 landed as:
+  - keep `scripts/checks.sh` as the single maintainer/agent verification entrypoint, with Stylua intentionally running in write mode before the diagnostic-only checks
+  - add `lua/neocraft/health.lua` for `:checkhealth neocraft`, scoped as:
+    - runtime-first checks for Neovim `0.12+`, `vim.pack`, and core executables like `git` / `rg`
+    - repo-file expectations and maintainer tools surfaced as informational/warning-oriented sections rather than hard runtime failures
+  - keep `nvim-pack-lock.json` as the reproducible plugin-state source of truth
+  - add `lua/neocraft/plugins/ui.lua` as the home for non-`mini.nvim` UI-ish/editor-polish plugins introduced in this stage
+  - add `virt-column.nvim` as the visual column renderer:
+    - keep existing `colorcolumn` values as the source of truth
+    - use a subtle `┊` guide
+    - preserve prose-local `+1` behavior rather than hardcoding a global width in plugin config
+  - add `indent-blankline.nvim` / `ibl` for persistent indent guides:
+    - keep `mini.indentscope` as the active scope layer
+    - disable `ibl` scope rendering to avoid overlap
+    - disable `ibl` in prose and special buffers
+  - add `nvim-ts-autotag` with a minimal `setup({})` in the tree-sitter layer
+  - add `render-markdown.nvim` with a styled-but-contained setup:
+    - keep commit messages plain by disabling `gitcommit` injection
+    - let the plugin own Markdown conceal behavior
+    - keep prose-local width/wrap settings in `after/ftplugin/markdown.lua`
+    - make the global conceal toggle Markdown-aware by using `render-markdown` buffer toggling in Markdown buffers
+  - investigate `vim-sleuth`, but prefer `guess-indent.nvim` instead for narrower heuristic indent detection:
+    - keep EditorConfig precedence with `override_editorconfig = false`
+    - apply broadly to normal file buffers as a fallback when explicit indent config is absent
+  - optional late-stage polish landed further than originally planned:
+    - `mini.hipatterns` for uppercase `FIXME` / `WIP` / `XXX` / `FIX` / `DOCS`, etc. markers plus `hex`, `rgb(a)`, and `hsl(a)` color previews
+    - a dedicated project `TODOs` picker on `<Leader>lt` for those markers, with semantic marker highlighting in both picker rows and preview
+    - `mini.map` as an always-on minimap using structural overview plus built-in search and `mini.diff`, with `\m` as the toggle and explicit refreshes wired into search-clearing/search-motion flows
+    - `mini.animate` kept only after proving worthwhile in practice:
+      - cursor + scroll are enabled
+      - resize remains disabled
+      - open/close use very fast timings
+      - scroll uses an adaptive fast path for long jumps rather than key-specific `gg` / `G` exceptions
+  - `mini.base16` is now the base theming layer for a local `gruvcraft-dark` colorscheme:
+    - theme code lives under `lua/neocraft/theme/` with a small `colors/gruvcraft-dark.lua` entrypoint
+    - the base palette comes from `mini.base16`, then Neocraft applies explicit layers for builtin syntax, Tree-sitter, semantic tokens, editor/UI surfaces, diff, Markdown, and current plugin groups
+    - runtime theming is intentionally tiny and theme-owned:
+      - the active `WinBar` is mode-reactive
+      - command-line mode participates too
+      - inactive `WinBarNC` stays static
+    - keep the theme architecture ready for a future `gruvcraft-light` variant instead of baking everything into one monolithic colorscheme file
 
 ### Stage 15: Documentation And Upgrade Story
 
@@ -618,8 +654,17 @@
 - Hidden actions: curated picker on `<C-p>` for global non-`<Leader>` mappings and discoverable language-specific actions
 - Code namespace: `<Leader>cl...` for logs/info (`cla`, `clc`, `cll`, `clt`)
 - Lists: `<Leader>ln` for notifications history, `<Leader>lp` for `vim.pack` summary
+- Lists: `<Leader>ln` for notifications history, `<Leader>lp` for `vim.pack` summary, `<Leader>lt` for project todos
 - Discoverability: `mini.clue`
-- UI/status: mini modules first
+- UI/status: mini modules first, with targeted complements where they clearly improve the experience (`virt-column`, `ibl`, `render-markdown`, `guess-indent`, `nvim-ts-autotag`)
+- Indent detection: explicit Neocraft defaults first, EditorConfig when present, and `guess-indent.nvim` as the broad heuristic fallback
+- Indent guides: `ibl` for persistent guides plus `mini.indentscope` for active scope emphasis
+- Column guide: `virt-column.nvim` driven by existing `colorcolumn` values
+- Markdown UX: `render-markdown.nvim` for rendered Markdown, with commit messages kept plain and prose-local width/wrap rules retained
+- Project overview: always-on `mini.map` with search and diff integrations, toggled with `\m`
+- Motion polish: `mini.animate` with fast cursor/open/close timings, adaptive scroll timing for long jumps, and resize animation disabled
+- Visual cues: `mini.hipatterns` for project notes and common CSS color formats
+- Colorscheme: local `gruvcraft-dark` built on `mini.base16`, with explicit highlight layers for syntax/UI/plugins and a mode-reactive active `WinBar`
 - External tools: auto-installed by Mason from declared lists
 
 ## What This Plan Optimizes For
