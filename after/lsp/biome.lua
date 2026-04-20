@@ -1,3 +1,15 @@
+-- Overwrites the `root_dir` logic from the default biome LSP config provided by `nvim-lspconfig`.
+
+--  * Only starts Biome when the buffer lives in a project with an explicit Biome config.
+--  * Treats `package.json#biomejs` as a valid Biome opt-in alongside `biome.json{,c}` files.
+--  * Refuses to attach when the same project also declares ESLint config to avoid overlapping tools.
+--
+-- DOCS: https://github.com/neovim/nvim-lspconfig/blob/master/lsp/biome.lua
+
+-- ┌───────────────────────────────────────────┐
+-- │ Setup                                     │
+-- └───────────────────────────────────────────┘
+
 local eslint_markers = {
   '.eslintrc',
   '.eslintrc.js',
@@ -29,6 +41,10 @@ local root_markers = {
   'deno.lock',
   '.git',
 }
+
+-- ┌───────────────────────────────────────────┐
+-- │ Module helpers                            │
+-- └───────────────────────────────────────────┘
 
 local function read_json(path)
   local file = io.open(path, 'r')
@@ -69,6 +85,10 @@ local function has_config(bufnr, markers, package_key)
 
   return false, root_dir
 end
+
+-- ┌───────────────────────────────────────────┐
+-- │ LSP config                                │
+-- └───────────────────────────────────────────┘
 
 return {
   root_dir = function(bufnr, on_dir)

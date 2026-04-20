@@ -1,8 +1,24 @@
+-- Overrides settings from the default lua_ls LSP config provided by `nvim-lspconfig`.
+--
+--  * Respects project-local `.luarc.json{,c}` files outside this Neovim config instead of forcing Neovim defaults.
+--  * Adds Neovim runtime paths, the `luv` library, and the global `Lib` helper when those defaults do apply.
+--  * Enables code lens, inlay hints, and function-call snippet replacement for Lua buffers.
+--
+-- DOCS: https://github.com/neovim/nvim-lspconfig/blob/master/lsp/lua_ls.lua
+
+-- ┌───────────────────────────────────────────┐
+-- │ Module helpers                            │
+-- └───────────────────────────────────────────┘
+
 local function has_project_luarc(root_dir)
   if type(root_dir) ~= 'string' or root_dir == '' then return false end
 
   return vim.uv.fs_stat(root_dir .. '/.luarc.json') ~= nil or vim.uv.fs_stat(root_dir .. '/.luarc.jsonc') ~= nil
 end
+
+-- ┌───────────────────────────────────────────┐
+-- │ LSP config                                │
+-- └───────────────────────────────────────────┘
 
 return {
   on_init = function(client)

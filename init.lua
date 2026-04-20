@@ -29,13 +29,12 @@ require('neocraft.config.autocmds')
 require('neocraft.config.keymaps')
 
 -- ┌───────────────────────────────────────────┐
--- │ Infrastructure                            │
+-- │ Helper modules                            │
 -- └───────────────────────────────────────────┘
 
 require('neocraft.core.pack')
 require('neocraft.core.root')
 require('neocraft.core.sessions')
-require('neocraft.terminal')
 
 -- ┌───────────────────────────────────────────┐
 -- │ Plugins                                   │
@@ -45,8 +44,17 @@ require('neocraft.plugins.mini')
 require('neocraft.plugins.ui')
 require('neocraft.plugins.treesitter')
 require('neocraft.plugins.lsp')
-require('neocraft.plugins.format')
+require('neocraft.plugins.conform')
 require('neocraft.plugins.git')
+
+-- ┌───────────────────────────────────────────┐
+-- │ Features                                  │
+-- └───────────────────────────────────────────┘
+
+require('neocraft.features.mini')
+require('neocraft.features.treesitter')
+require('neocraft.features.completions')
+require('neocraft.features.terminal')
 
 -- ┌───────────────────────────────────────────┐
 -- │ Theme                                     │

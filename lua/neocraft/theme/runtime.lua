@@ -1,11 +1,14 @@
-local util = require('neocraft.theme.util')
+-- Apply runtime theme behavior like mode-aware WinBar highlights.
 
 local M = {}
 
-local set = util.set
+-- ┌───────────────────────────────────────────┐
+-- │ Module helpers                            │
+-- └───────────────────────────────────────────┘
 
-local group = Lib.augroup('theme-runtime')
+local set = require('neocraft.theme.util').set
 
+-- Determine the current Neovim mode and return a corresponding mode name.
 local function mode_name()
   local first = vim.api.nvim_get_mode().mode:byte(1)
 
@@ -26,23 +29,31 @@ local function mode_name()
   return 'normal'
 end
 
+-- Return the appropriate background color for the active WinBar based on the current mode.
+---@param colors neocraft.theme.Colors
+---@param mode string
+---@return neocraft.theme.ColorValue
 local function active_winbar_bg(colors, mode)
   local colors_by_mode = {
     normal = colors.blue,
     insert = colors.green,
     select = colors.yellow,
     replace = colors.red,
-    command = colors.orange,
+    command = colors.normal,
   }
 
   return colors_by_mode[mode] or colors.blue
 end
 
+-- Apply the WinBar highlight for the current mode.
+---@param spec neocraft.theme.Spec
+---@param mode? string
 local function apply_winbar(spec, mode)
   if vim.g.colors_name ~= spec.name then return end
   set('WinBar', spec.colors.black, active_winbar_bg(spec.colors, mode or mode_name()), { bold = true })
 end
 
+-- Redraw the WinBar for the current window, using the appropriate API if available or falling back to a status redraw.
 local function redraw_winbar()
   if vim.api.nvim__redraw ~= nil then
     pcall(vim.api.nvim__redraw, {
@@ -57,6 +68,14 @@ local function redraw_winbar()
   pcall(function() vim.cmd('redrawstatus') end)
 end
 
+-- ┌───────────────────────────────────────────┐
+-- │ Runtime WinBar behavior                   │
+-- └───────────────────────────────────────────┘
+
+local group = Lib.augroup('theme-runtime')
+
+-- Set up autocmds to update the WinBar highlights based on mode changes and command line entry/exit.
+---@param spec neocraft.theme.Spec
 function M.setup(spec)
   vim.api.nvim_clear_autocmds({ group = group })
   apply_winbar(spec)

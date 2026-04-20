@@ -1,3 +1,5 @@
+-- Neocraft's global options and diagnostics configuration.
+
 local opt = vim.opt
 
 vim.env.RIPGREP_CONFIG_PATH = vim.fs.joinpath(vim.fn.stdpath('config'), '.ripgreprc')
@@ -9,13 +11,13 @@ vim.env.RIPGREP_CONFIG_PATH = vim.fs.joinpath(vim.fn.stdpath('config'), '.ripgre
 -- └───────────────────────────────────────────┘
 
 vim.g.mapleader                  = ' '                              -- Use `<Space>` as <Leader> key
+vim.g.maplocalleader             = ','                              -- Use `,` as <LocalLeader> key
 vim.g.markdown_recommended_style = 0                                -- Disable legacy markdown style defaults
 vim.g.have_nerd_font             = true                             -- Enable icons in the UI
 vim.g.enable_format_on_save      = true                             -- Enable save-time formatting at startup
 vim.g.enable_inlay_hints         = true                             -- Enable inlay hints at startup
 vim.g.enable_codelens            = false                            -- Disable codelens at startup
 vim.g.enable_inline_completions  = true                             -- Enable native Copilot inline completions at startup
-vim.g.enable_NES                 = true                             -- Enable Copilot NES integration at startup
 
 -- ┌───────────────────────────────────────────┐
 -- │ General Settings                          │
@@ -23,10 +25,13 @@ vim.g.enable_NES                 = true                             -- Enable Co
 
 opt.clipboard                    = vim.env.SSH_CONNECTION and '' or 'unnamedplus' -- Sync with system clipboard
 opt.mouse                        = 'a'                              -- Enable mouse
+opt.mousescroll                  = "ver:2,hor:6"                    -- Adjust vertical and horizontal scroll speed
 opt.termguicolors                = true                             -- True color support
 opt.confirm                      = true                             -- Confirm to save changes before exiting modified buffer
+opt.jumpoptions                  = "view"                           -- Restore folds, scroll position, etc., when jumping back with <C-o>.
 opt.sessionoptions               = { 'buffers', 'help', 'localoptions', 'skiprtp', 'tabpages', 'winsize' }
 opt.undofile                     = true                             -- Enable persistent undo
+opt.undolevels                   = 10000                            -- Allows for a deep undo history.
 opt.updatetime                   = 250                              -- Decrease update time
 opt.timeoutlen                   = 500                              -- Decrease mapped sequence wait time
 
@@ -36,7 +41,8 @@ opt.timeoutlen                   = 500                              -- Decrease 
 
 opt.number                       = true                             -- Show line numbers
 opt.laststatus                   = 3                                -- Show a global statusline.
-opt.winbar                       = "%{%v:lua.require('neocraft.winbar').render()%}" -- Show project-root-aware path in the window bar.
+opt.winbar                       = "%{%v:lua.require('neocraft.features.editor').render_winbar()%}" -- Show project-root-aware path in the window bar.
+opt.title                        = true                             -- Let Neovim keep the terminal title in sync with the focused buffer.
 opt.shortmess:append({ W = true, I = true, c = true, C = true })    -- Suppress unnecessary messages for a cleaner UI.
 opt.relativenumber               = false                            -- Don't show relative line numbers by default
 opt.showmode                     = false                            -- Don't show mode in command line
@@ -46,7 +52,9 @@ opt.cursorline                   = false                            -- Let focus
 opt.cursorlineopt                = 'screenline,number'              -- Focus cursorline on the active screen line and number column
 opt.scrolloff                    = 2                                -- Lines of context
 opt.sidescrolloff                = 8                                -- Columns of context for long lines
+opt.smoothscroll                 = true                             -- Enable smooth scrolling.
 opt.list                         = true                             -- Show helpful text indicators
+opt.showbreak                    = "↳ "                             -- String to show at the start of wrapped lines.
 opt.listchars                    = {                                -- Whitespace characters display
   tab = '» ',
   trail = '·',
@@ -54,6 +62,16 @@ opt.listchars                    = {                                -- Whitespac
 }
 opt.fillchars                    = {                                -- UI filler characters
   eob = ' ',
+  diff = "╱",
+  -- use light vertical lines to minimize visual clutter
+  vert = "▕",
+  vertleft = "▕",
+  vertright = "▕",
+  verthoriz = "▕",
+  -- use light horizontal lines to minimize visual clutter
+  horiz = "─",
+  horizup = "─",
+  horizdown = "─",
 }
 opt.foldenable                   = true                             -- Keep folding available without starting collapsed
 opt.foldcolumn                   = '0'                              -- Don't reserve a dedicated fold column
@@ -122,7 +140,7 @@ opt.spelloptions                 = 'camel'                          -- Treat cam
 opt.conceallevel                 = 0                                -- Keep code and data buffers fully visible by default.
 opt.concealcursor                = ''                               -- Only conceal in filetypes that opt in locally.
 opt.formatlistpat                = [[^\s*[0-9\-\+\*]\+[\.\)]*\s\+]] -- Recognize numbered and bulleted lists
-opt.formatexpr                  = "v:lua.require'neocraft.plugins.format'.formatexpr()" -- Route `gq` through Conform by default
+opt.formatexpr                  = "v:lua.require'neocraft.features.formatting'.formatexpr()" -- Route `gq` through Conform by default
 
 -- stylua: ignore end
 

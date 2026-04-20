@@ -1,3 +1,15 @@
+-- Overrides settings from the default vtsls LSP config provided by nvim-lspconfig.
+--
+--  * Enables richer JavaScript and TypeScript completions, including function-call snippets and fuzzy server-side matching.
+--  * Keeps import updates and move-to-file refactors enabled for file rename and extraction workflows.
+--  * Enables inlay hints and code lenses for references and implementations with slightly tighter hint display limits.
+--
+-- DOCS: https://github.com/neovim/nvim-lspconfig/blob/master/lsp/vtsls.lua
+
+-- ┌───────────────────────────────────────────┐
+-- │ Setup                                     │
+-- └───────────────────────────────────────────┘
+
 local language_settings = {
   suggest = {
     completeFunctionCalls = true,
@@ -31,6 +43,10 @@ local language_settings = {
   referencesCodeLens = { enabled = true, showOnAllFunctions = true },
   implementationsCodeLens = { enabled = true },
 }
+
+-- ┌───────────────────────────────────────────┐
+-- │ LSP config                                │
+-- └───────────────────────────────────────────┘
 
 return {
   settings = {

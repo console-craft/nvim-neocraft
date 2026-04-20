@@ -1,77 +1,79 @@
-local root = require('neocraft.core.root')
+-- Automatically load and save sessions on startup and exit by managing session files associated with project roots.
 
 local M = {}
 
-function M.dir() return vim.fs.joinpath(vim.fn.stdpath('state'), 'sessions') end
+local root = require('neocraft.core.root')
 
-function M.root_path(buf)
+-- ┌───────────────────────────────────────────┐
+-- │ Module helpers                            │
+-- └───────────────────────────────────────────┘
+
+local function dir() return vim.fs.joinpath(vim.fn.stdpath('state'), 'sessions') end
+
+-- Return the project root path for a buffer, or nil if no root is found.
+local function root_path(buf)
   local session_root = root.get({ buf = buf })
   return session_root and root.realpath(session_root) or nil
 end
 
-function M.name(session_root)
-  session_root = session_root or M.root_path()
+-- Generate a session name based on the project root path, or return nil if no root is found.
+local function name(session_root)
+  session_root = session_root or root_path()
   if not session_root or session_root == '' then return nil end
 
   return (session_root:gsub('[^%w%.%-_]+', '_')) .. '.vim'
 end
 
-function M.path(session_root)
-  local name = M.name(session_root)
-  return name and vim.fs.joinpath(M.dir(), name) or nil
+-- Return the full path to the session file for a project root, or nil if no root is found.
+local function path(session_root)
+  local session_name = name(session_root)
+  return session_name and vim.fs.joinpath(dir(), session_name) or nil
 end
 
-function M.exists(session_root)
-  local path = M.path(session_root)
-  return path ~= nil and vim.uv.fs_stat(path) ~= nil
+-- Check if a session file exists for a project root.
+local function exists(session_root)
+  local session_path = path(session_root)
+  return session_path ~= nil and vim.uv.fs_stat(session_path) ~= nil
 end
 
-function M.read_current(opts)
-  local name = M.name()
-  if name == nil or not M.exists() then return false end
-
-  opts = vim.tbl_extend('force', { verbose = false }, opts or {})
-  require('mini.sessions').read(name, opts)
-  return true
-end
-
-function M.write_current(opts)
-  local name = M.name()
-  if name == nil then return false end
+-- Write the current session for the project root, creating or overwriting the session file as needed.
+local function write_current(opts)
+  local session_name = name()
+  if session_name == nil then return false end
 
   opts = vim.tbl_extend('force', { force = true, verbose = false }, opts or {})
-  require('mini.sessions').write(name, opts)
+  require('mini.sessions').write(session_name, opts)
   return true
 end
 
-function M.delete_current(opts)
-  local name = M.name()
-  if name == nil then return false end
-  if not M.exists() then
-    vim.notify('No session file to remove for this project', vim.log.levels.INFO)
-    return false
-  end
+-- Read the session for the current project root, if it exists, and restore the session state.
+local function read_current(opts)
+  local session_name = name()
+  if session_name == nil or not exists() then return false end
 
-  opts = vim.tbl_extend('force', { force = true, verbose = true }, opts or {})
-  require('mini.sessions').delete(name, opts)
+  opts = vim.tbl_extend('force', { verbose = false }, opts or {})
+  require('mini.sessions').read(session_name, opts)
   return true
+end
+
+-- Attempt to read the session for the current project root on startup, if no files were specified on the command line.
+local function maybe_autoread()
+  if vim.fn.argc(-1) > 0 then return false end
+  return pcall(read_current)
 end
 
 local discard_key = 'neocraft_discard_session'
 
-function M.discard_once() vim.g[discard_key] = true end
-
-function M.maybe_autoread()
-  if vim.fn.argc(-1) > 0 then return false end
-  return pcall(M.read_current)
-end
+-- ┌───────────────────────────────────────────┐
+-- │ Auto load & auto save sessions            │
+-- └───────────────────────────────────────────┘
 
 local group = Lib.augroup('sessions')
 
 Lib.autocmd('VimEnter', {
   group = group,
   desc = 'Restore Neocraft project session on bare startup',
-  callback = function() pcall(M.maybe_autoread) end,
+  callback = function() pcall(maybe_autoread) end,
 })
 
 Lib.autocmd('VimLeavePre', {
@@ -83,8 +85,29 @@ Lib.autocmd('VimLeavePre', {
       return
     end
 
-    pcall(M.write_current)
+    pcall(write_current)
   end,
 })
+
+-- ┌───────────────────────────────────────────┐
+-- │ Module exports                            │
+-- └───────────────────────────────────────────┘
+
+-- Delete the session file for the current project root, if it exists.
+function M.delete_current(opts)
+  local session_name = name()
+  if session_name == nil then return false end
+  if not exists() then
+    vim.notify('No session file to remove for this project', vim.log.levels.INFO)
+    return false
+  end
+
+  opts = vim.tbl_extend('force', { force = true, verbose = true }, opts or {})
+  require('mini.sessions').delete(session_name, opts)
+  return true
+end
+
+-- Set a flag to skip saving the session on exit, which can be used to discard the session when exiting Neovim.
+function M.discard_once() vim.g[discard_key] = true end
 
 return M

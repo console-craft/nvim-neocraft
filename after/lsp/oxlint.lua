@@ -1,3 +1,15 @@
+-- Overrides the default `root_dir` logic from the default oxlint LSP config provided by `nvim-lspconfig`.
+--
+--  * Only starts Oxlint when the buffer lives in a project with an explicit Oxlint config.
+--  * Refuses to attach when the same project also declares ESLint config to avoid overlapping linters.
+--  * Refuses to attach when the same project also declares Biome config to avoid overlapping JS tooling.
+--
+-- DOCS: https://github.com/neovim/nvim-lspconfig/blob/master/lsp/oxlint.lua
+
+-- ┌───────────────────────────────────────────┐
+-- │ Setup                                     │
+-- └───────────────────────────────────────────┘
+
 local eslint_markers = {
   '.eslintrc',
   '.eslintrc.js',
@@ -35,6 +47,10 @@ local root_markers = {
   'deno.lock',
   '.git',
 }
+
+-- ┌───────────────────────────────────────────┐
+-- │ Module helpers                            │
+-- └───────────────────────────────────────────┘
 
 local function read_json(path)
   local file = io.open(path, 'r')
@@ -75,6 +91,10 @@ local function has_config(bufnr, markers, package_key)
 
   return false, root_dir
 end
+
+-- ┌───────────────────────────────────────────┐
+-- │ LSP config                                │
+-- └───────────────────────────────────────────┘
 
 return {
   root_dir = function(bufnr, on_dir)

@@ -1,7 +1,14 @@
+-- Neocraft health entrypoint for runtime, repo, and maintainer tool checks.
+
 local M = {}
+
+-- ┌───────────────────────────────────────────┐
+-- │ Module helpers                            │
+-- └───────────────────────────────────────────┘
 
 local uv = vim.uv or vim.loop
 
+-- Check if an executable is available in the system.
 local function executable(name, opts)
   local message = "Found executable: '" .. name .. "'"
   if vim.fn.executable(name) == 1 then
@@ -17,8 +24,10 @@ local function executable(name, opts)
   end
 end
 
+-- Check if a file exists at the given path.
 local function file_exists(path) return uv.fs_stat(path) ~= nil end
 
+-- Check if a file exists at the given relative path from the config directory.
 local function config_file(relative_path)
   local path = vim.fs.joinpath(vim.fn.stdpath('config'), relative_path)
   if file_exists(path) then
@@ -29,6 +38,11 @@ local function config_file(relative_path)
   vim.health.warn("Missing file: '" .. relative_path .. "'")
 end
 
+-- ┌───────────────────────────────────────────┐
+-- │ Health checks                             │
+-- └───────────────────────────────────────────┘
+
+-- Run health checks for Neocraft, including core executables, runtime environment, repo files, and maintainer tools.
 function M.check()
   vim.health.start('Core executables')
   executable('git', { required = true })
@@ -55,7 +69,7 @@ function M.check()
   vim.health.start('Repo files')
   config_file('nvim-pack-lock.json')
   config_file('scripts/checks.sh')
-  config_file('scripts/live_luals.lua')
+  config_file('scripts/runtime_diagnostics.lua')
   vim.health.info(
     'These files describe the checked-in Neocraft repository and are mainly useful when developing or verifying this config.'
   )

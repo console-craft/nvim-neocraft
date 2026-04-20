@@ -1,0 +1,39 @@
+-- Baseline profile with LSP, tools, and formatter preferences.
+
+---@type neocraft.lang.Profile
+return {
+  servers = {
+    copilot = {},
+    lua_ls = {},
+    jsonls = {},
+    yamlls = {},
+    gh_actions_ls = {},
+    dockerls = {},
+    docker_compose_language_service = {},
+    taplo = {},
+    bashls = {},
+    marksman = {},
+  },
+  tools = {
+    'luacheck',
+    'stylua',
+    'shfmt',
+    'prettierd',
+    'prettier',
+    'oxfmt',
+    'biome',
+    'mdformat',
+  },
+  formatters_by_ft = {
+    lua = { 'stylua' },
+    sh = { 'shfmt' },
+    bash = { 'shfmt' },
+    zsh = { 'shfmt' },
+    markdown = { project = 'markdown', fallback = { 'mdformat' } },
+    toml = { project = 'toml', fallback = { 'taplo' } },
+    json = { project = 'json' },
+    jsonc = { project = 'jsonc' },
+    yaml = { project = 'yaml' },
+    ['yaml.docker-compose'] = { project = 'yaml.docker-compose' },
+  },
+}

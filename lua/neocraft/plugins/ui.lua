@@ -1,16 +1,16 @@
-local pack = require('neocraft.core.pack')
+-- UI related plugins.
 
 local M = {}
 
+-- ┌───────────────────────────────────────────┐
+-- │ Module helpers                            │
+-- └───────────────────────────────────────────┘
+
+local pack = require('neocraft.core.pack')
+
 local prose_filetypes = {
-  'asciidoc',
   'gitcommit',
   'markdown',
-  'norg',
-  'org',
-  'plaintex',
-  'rst',
-  'tex',
   'text',
 }
 
@@ -27,22 +27,21 @@ local excluded_ui_filetypes = {
   'lspinfo',
   'man',
   'neocraft-pack',
-  'packer',
-  'TelescopePrompt',
-  'TelescopeResults',
 }
 
-local ibl_excluded_filetypes = vim.list_extend(vim.deepcopy(prose_filetypes), vim.deepcopy(excluded_ui_filetypes))
+-- ┌───────────────────────────────────────────┐
+-- │ Install plugins                           │
+-- └───────────────────────────────────────────┘
 
 pack.add('ui', {
   { src = 'https://github.com/NMAC427/guess-indent.nvim' },
-  { src = 'https://github.com/lukas-reineke/virt-column.nvim' },
   { src = 'https://github.com/lukas-reineke/indent-blankline.nvim' },
+  { src = 'https://github.com/lukas-reineke/virt-column.nvim' },
   { src = 'https://github.com/MeanderingProgrammer/render-markdown.nvim' },
 })
 
 -- ┌───────────────────────────────────────────┐
--- │ guess-indent                              │
+-- │ Setup guess-indent                        │
 -- └───────────────────────────────────────────┘
 
 Lib.later(function()
@@ -52,25 +51,10 @@ Lib.later(function()
 end)
 
 -- ┌───────────────────────────────────────────┐
--- │ virt-column                               │
+-- │ Setup indent-blankline                    │
 -- └───────────────────────────────────────────┘
 
-Lib.later(function()
-  local virt_column = require('virt-column')
-
-  virt_column.setup({
-    char = '│',
-    highlight = 'VirtColumn',
-    exclude = {
-      buftypes = excluded_buftypes,
-      filetypes = excluded_ui_filetypes,
-    },
-  })
-end)
-
--- ┌───────────────────────────────────────────┐
--- │ indent-blankline                          │
--- └───────────────────────────────────────────┘
+local ibl_excluded_filetypes = vim.list_extend(vim.deepcopy(prose_filetypes), vim.deepcopy(excluded_ui_filetypes))
 
 Lib.later(
   function()
@@ -92,7 +76,24 @@ Lib.later(
 )
 
 -- ┌───────────────────────────────────────────┐
--- │ render-markdown                           │
+-- │ Setup virt-column                         │
+-- └───────────────────────────────────────────┘
+
+Lib.later(function()
+  local virt_column = require('virt-column')
+
+  virt_column.setup({
+    char = '│',
+    highlight = 'VirtColumn',
+    exclude = {
+      buftypes = excluded_buftypes,
+      filetypes = excluded_ui_filetypes,
+    },
+  })
+end)
+
+-- ┌───────────────────────────────────────────┐
+-- │ Setup render-markdown                     │
 -- └───────────────────────────────────────────┘
 
 Lib.later(

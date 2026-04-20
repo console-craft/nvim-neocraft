@@ -1,11 +1,40 @@
+-- Merge language profiles into shared server, tool, and formatter maps.
+
+---@class neocraft.lang.ProjectFormatterEntry
+---@field project? string
+---@field fallback? string[]
+
+---@alias neocraft.lang.FormatterEntry string[]|neocraft.lang.ProjectFormatterEntry
+
+---@class neocraft.lang.Profile
+---@field servers? table<string, table>
+---@field tools? string[]
+---@field formatters_by_ft? table<string, neocraft.lang.FormatterEntry>
+
+---@class neocraft.lang.NamedProfile
+---@field name string
+---@field spec neocraft.lang.Profile
+
 local M = {}
 
+-- ┌───────────────────────────────────────────┐
+-- │ Profiles                                  │
+-- └───────────────────────────────────────────┘
+
+---@type neocraft.lang.NamedProfile[]
 local profiles = {
-  { name = 'authoring', spec = require('neocraft.lang.authoring') },
+  { name = 'base', spec = require('neocraft.lang.base') },
   { name = 'typescript', spec = require('neocraft.lang.typescript') },
   { name = 'python', spec = require('neocraft.lang.python') },
 }
 
+-- ┌───────────────────────────────────────────┐
+-- │ Module helpers                            │
+-- └───────────────────────────────────────────┘
+
+-- Merge a list of language profile maps associated to a key into a single map, checking for duplicate entries.
+---@param key 'servers'|'formatters_by_ft'
+---@return table<string, any>
 local function merge_map(key)
   local merged = {}
 
@@ -22,6 +51,8 @@ local function merge_map(key)
   return merged
 end
 
+-- Merge a list of language profile tool lists into a single list, checking for duplicate entries.
+---@return string[]
 local function merge_tools()
   local merged = {}
   local seen = {}
@@ -37,6 +68,10 @@ local function merge_tools()
 
   return merged
 end
+
+-- ┌───────────────────────────────────────────┐
+-- │ Merged profile maps                       │
+-- └───────────────────────────────────────────┘
 
 M.servers = merge_map('servers')
 M.tools = merge_tools()

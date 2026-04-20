@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 
-set -euo pipefail
+# Repo verification entrypoint for Neocraft maintainers and agent-driven verification.
 
-# Repo verification entrypoint for Neocraft maintainers and agent-driven
-# verification. This intentionally runs Stylua in write mode before the
-# diagnostic-only checks so later passes see normalized Lua formatting.
+# ┌───────────────────────────────────────────┐
+# │ Setup                                     │
+# └───────────────────────────────────────────┘
+
+set -euo pipefail
 
 ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 
@@ -20,16 +22,20 @@ fi
 
 cd "$ROOT_DIR"
 
-printf '==> luacheck\n'
-luacheck init.lua lua/ after/
+# ┌───────────────────────────────────────────┐
+# │ Run Checks                                │
+# └───────────────────────────────────────────┘
 
 printf '\n==> stylua\n'
-stylua init.lua lua/ after/
+stylua init.lua lua/ after/ colors/
+
+printf '==> luacheck\n'
+luacheck init.lua lua/ after/ colors/
 
 printf '\n==> lua-language-server --check\n'
-lua-language-server --check init.lua lua/ after/
+lua-language-server --check init.lua lua/ after/ colors/
 
-printf '\n==> live lua_ls diagnostics\n'
+printf '\n==> lua_ls runtime diagnostics\n'
 nvim --headless \
-  "+lua dofile(vim.fs.joinpath(vim.fn.stdpath('config'), 'scripts/live_luals.lua'))" \
+  "+lua dofile(vim.fs.joinpath(vim.fn.stdpath('config'), 'scripts/runtime_diagnostics.lua'))" \
   +qa

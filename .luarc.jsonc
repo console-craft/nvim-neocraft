@@ -23,10 +23,10 @@
       "Lib"
     ],
     "groupFileStatus": {
-      "strict": "Opened",
+      "strict": "Opened"
     },
     "groupSeverity": {
-      "strict": "Warning",
+      "strict": "Warning"
     },
     "unusedLocalExclude": [
       "_*"
@@ -37,7 +37,6 @@
     ]
   },
   "format": {
-    "enable": false // Handled by Stylua.
-  },
+    "enable": false
+  }
 }
-

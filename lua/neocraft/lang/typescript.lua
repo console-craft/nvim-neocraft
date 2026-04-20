@@ -1,3 +1,6 @@
+-- TypeScript language profile with LSP and formatter preferences.
+
+---@type neocraft.lang.Profile
 return {
   servers = {
     vtsls = {},

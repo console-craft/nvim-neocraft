@@ -15,7 +15,7 @@ This skill should always be run using the `verify` subagent!
 
 ## Expected behavior while fixing
 
-`./scripts/checks.sh` runs `luacheck`, `stylua`, `lua-language-server --check`, and a headless live `lua_ls` diagnostics pass.
+`./scripts/checks.sh` runs `stylua`, `luacheck`, `lua-language-server --check`, and a headless live `lua_ls` runtime diagnostics pass.
 
 If `stylua` changes files, that is expected. Re-run `./scripts/checks.sh` after fixes if needed.
 

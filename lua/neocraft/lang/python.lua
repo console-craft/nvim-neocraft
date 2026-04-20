@@ -1,3 +1,6 @@
+-- Python language profile with LSP, tools, and formatter preferences.
+
+---@type neocraft.lang.Profile
 return {
   servers = {
     basedpyright = {},

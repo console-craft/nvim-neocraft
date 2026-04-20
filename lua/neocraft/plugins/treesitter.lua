@@ -1,10 +1,12 @@
-local pack = require('neocraft.core.pack')
+-- Treesitter and Treesitter-related plugins configuration and setup.
 
 local M = {}
 
 -- ┌───────────────────────────────────────────┐
--- │ Settings                                  │
+-- │ Module helpers                            │
 -- └───────────────────────────────────────────┘
+
+local pack = require('neocraft.core.pack')
 
 local parsers = {
   'angular',
@@ -52,7 +54,7 @@ local foldexpr = 'v:lua.vim.treesitter.foldexpr()'
 local indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
 
 -- ┌───────────────────────────────────────────┐
--- │ Install and keep parsers updated          │
+-- │ Install plugins and keep parsers updated  │
 -- └───────────────────────────────────────────┘
 
 pack.add('treesitter', {
@@ -62,15 +64,15 @@ pack.add('treesitter', {
   { src = 'https://github.com/windwp/nvim-ts-autotag' },
 })
 
+Lib.now(function() require('nvim-treesitter').install(parsers) end)
+
 pack.on_changed('nvim-treesitter', 'update', function() vim.cmd('TSUpdate') end, 'Update tree-sitter parsers')
 
 -- ┌───────────────────────────────────────────┐
 -- │ Attach to supported buffers               │
--- │ Setup folds and indentation               │
 -- └───────────────────────────────────────────┘
 
-Lib.now(function() require('nvim-treesitter').install(parsers) end)
-
+-- Apply tree-sitter-based folding if the buffer variable is set, otherwise reset to default.
 local function apply_folds(buf)
   if vim.b[buf].neocraft_treesitter_folds == true then
     vim.wo.foldmethod = 'expr'
@@ -84,6 +86,7 @@ local function apply_folds(buf)
   end
 end
 
+-- Apply tree-sitter-based indentation if the buffer variable is set, otherwise reset to default.
 local function apply_indents(buf)
   if vim.b[buf].neocraft_treesitter_indents == true then
     vim.bo[buf].indentexpr = indentexpr
@@ -93,11 +96,13 @@ local function apply_indents(buf)
   if vim.bo[buf].indentexpr == indentexpr then vim.bo[buf].indentexpr = '' end
 end
 
+-- Check if a tree-sitter query exists for the given language and query name.
 local function has_query(lang, query)
   local ok, parsed = pcall(vim.treesitter.query.get, lang, query)
   return ok and parsed ~= nil
 end
 
+-- Check if a tree-sitter parser is available for the given language.
 local function has_parser(lang)
   if type(lang) ~= 'string' or lang == '' then return false end
 
@@ -105,11 +110,13 @@ local function has_parser(lang)
   return ok and parser ~= nil and parser ~= false
 end
 
+-- Get the tree-sitter language for a buffer, falling back to the filetype if no parser is available.
 local function get_lang(buf)
   local filetype = vim.bo[buf].filetype
   return vim.treesitter.language.get_lang(filetype) or filetype
 end
 
+-- Attach features to a buffer if a parser is available for that language and add buffer variables for later use.
 local function attach(buf)
   local lang = get_lang(buf)
   if not has_parser(lang) then
@@ -145,30 +152,13 @@ Lib.autocmd('BufWinEnter', {
 })
 
 -- ┌───────────────────────────────────────────┐
--- │ Treesitter Text Objects                   │
+-- │ Setup Treesitter Text Objects             │
 -- └───────────────────────────────────────────┘
 
-Lib.now(function()
-  require('nvim-treesitter-textobjects').setup({ move = { set_jumps = true } })
-
-  local move = require('nvim-treesitter-textobjects.move')
-
-  local map = function(lhs, rhs, desc) vim.keymap.set('n', lhs, rhs, { silent = true, desc = desc }) end
-
-  map(']f', function() move.goto_next_start('@function.outer') end, 'Next function start')
-  map(']F', function() move.goto_next_end('@function.outer') end, 'Next function end')
-  map('[f', function() move.goto_previous_start('@function.outer') end, 'Prev function start')
-  map('[F', function() move.goto_previous_end('@function.outer') end, 'Prev function end')
-  map(']c', function() move.goto_next_start('@class.outer') end, 'Next class start')
-  map(']C', function() move.goto_next_end('@class.outer') end, 'Next class end')
-  map('[c', function() move.goto_previous_start('@class.outer') end, 'Prev class start')
-  map('[C', function() move.goto_previous_end('@class.outer') end, 'Prev class end')
-  map(']z', function() move.goto_next_start('@fold', 'folds') end, 'Next fold')
-  map('[z', function() move.goto_previous_start('@fold', 'folds') end, 'Prev fold')
-end)
+Lib.now(function() require('nvim-treesitter-textobjects').setup({ move = { set_jumps = true } }) end)
 
 -- ┌───────────────────────────────────────────┐
--- │ Treesitter Context                        │
+-- │ Setup Treesitter Context                  │
 -- └───────────────────────────────────────────┘
 
 Lib.later(function()
@@ -183,7 +173,7 @@ Lib.later(function()
 end)
 
 -- ┌───────────────────────────────────────────┐
--- │ nvim-ts-autotag                           │
+-- │ Setup nvim-ts-autotag                     │
 -- └───────────────────────────────────────────┘
 
 Lib.later(function()
