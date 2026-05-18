@@ -131,9 +131,31 @@ function M.files(buf, opts)
   return M.builtin('files', nil, opts)
 end
 
+-- Start 'files' built-in picker, showing files across the full Git root.
+function M.all_files(buf, opts)
+  opts = vim.tbl_deep_extend('force', {
+    buf = buf,
+    kind = 'git',
+    source = { name = 'Find all files' },
+  }, opts or {})
+
+  return M.builtin('files', nil, opts)
+end
+
 -- Start 'grep_live' built-in picker, showing live grep results for the current project.
 function M.grep_live(buf, opts)
   opts = vim.tbl_extend('force', { buf = buf }, opts or {})
+  return M.builtin('grep_live', nil, opts)
+end
+
+-- Start 'grep_live' built-in picker, showing live grep results across the full Git root.
+function M.all_grep_live(buf, opts)
+  opts = vim.tbl_deep_extend('force', {
+    buf = buf,
+    kind = 'git',
+    source = { name = 'Grep all text' },
+  }, opts or {})
+
   return M.builtin('grep_live', nil, opts)
 end
 
@@ -148,6 +170,17 @@ function M.grep_cword(buf, opts)
 
   opts = vim.tbl_extend('force', { buf = buf }, opts or {})
   return M.builtin('grep', { pattern = word }, opts)
+end
+
+-- Start 'grep_cword' custom picker, showing grep results for the word under the cursor across the full Git root.
+function M.all_grep_cword(buf, opts)
+  opts = vim.tbl_deep_extend('force', {
+    buf = buf,
+    kind = 'git',
+    source = { name = 'Grep all word' },
+  }, opts or {})
+
+  return M.grep_cword(buf, opts)
 end
 
 -- Starts 'quickfix_list' custom picker, showing items in the quickfix list for all buffers.
@@ -186,6 +219,17 @@ function M.todos(buf, opts)
   return M.builtin('grep', {
     pattern = [[\b(ERROR|DANGER|CRITICAL|FAIL|BUG|FIXME|WARNING|CAUTION|IMPORTANT|WARN|DEPRECATED|WIP|TEMP|TEMPORARY|TODO|SKIP|PATCH|XXX|INFO|HINT|NOTE|TIP|EXAMPLE|DOCS)\b]],
   }, opts)
+end
+
+-- Starts 'todos' custom picker, showing custom comment labels across the full Git root.
+function M.all_todos(buf, opts)
+  opts = vim.tbl_deep_extend('force', {
+    buf = buf,
+    kind = 'git',
+    source = { name = 'All TODOs' },
+  }, opts or {})
+
+  return M.todos(buf, opts)
 end
 
 return M

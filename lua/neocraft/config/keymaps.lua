@@ -126,6 +126,7 @@ nmap( '[w',   function() editing.goto_diagnostic(false, 'WARN') end,   'Prev dia
 nmap_leader(  'd',          function() editing.line_diagnostics() end,            'Line diagnostics')
 nmap_leader(  'e',          function() mini.explore_files() end,                 'Explore files')
 nmap_leader(  'f',          function() pickers.files() end,                      'Find files')
+nmap_leader(  'F',          function() pickers.all_files() end,                  'Find all files')
 nmap_leader(  'p',          function() pickers.registry() end,                   'Pickers')
 nmap_leader(  'q',          function() workspace.close_window_or_tab() end,      'Close window or tab')
 nmap_leader(  'r',          function() pickers.resume() end,                     'Resume picker')
@@ -137,7 +138,9 @@ nmap_leader(  'y',          function() workspace.copy_buffer_content() end,     
 nmap_leader(  '<Leader>',   function() focus.pick_focus() end,                   'Focus list')
 nmap_leader(  '<Tab>',      function() workspace.new_tab() end,                  'New tab')
 nmap_leader(  '*',          function() pickers.grep_cword() end,                 'Grep word')
+nmap_leader(  '#',          function() pickers.all_grep_cword() end,             'Grep all word')
 nmap_leader(  '/',          function() pickers.grep_live() end,                  'Grep text')
+nmap_leader(  '?',          function() pickers.all_grep_live() end,              'Grep all text')
 
 -- ┌───────────────────────────────────────────┐
 -- │ Toggle mappings                           │
@@ -247,6 +250,7 @@ nmap_leader('ln', function() editor.show_notifications() end, 'Notifications')
 nmap_leader('ll', function() editor.open_location_list() end, 'Location')
 nmap_leader('lp', function() vim.cmd.tabnew() plugins.show_pack() end, 'Plugins')
 nmap_leader('lt', function() pickers.todos() end, 'TODOs')
+nmap_leader('lT', function() pickers.all_todos() end, 'All TODOs')
 
 -- ┌───────────────────────────────────────────┐
 -- │ Focus list mappings                       │

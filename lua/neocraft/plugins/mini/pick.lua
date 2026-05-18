@@ -10,6 +10,10 @@ local pickers = require('neocraft.features.pickers')
 
 local public_custom_pickers = {
   actions = pickers.actions,
+  all_files = pickers.all_files,
+  all_grep_cword = pickers.all_grep_cword,
+  all_grep_live = pickers.all_grep_live,
+  all_todos = pickers.all_todos,
   autocmds = pickers.autocmds,
   grep_cword = pickers.grep_cword,
   location_list = pickers.location_list,
