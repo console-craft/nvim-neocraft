@@ -169,14 +169,18 @@ function M.close_window_or_tab()
   end
 end
 
--- Focus a neighboring window, falling back to wezterm pane navigation.
+-- Focus a neighboring window, falling back to herdr/wezterm pane navigation.
 local function navigate(direction, cli_direction)
   local cur_win = vim.api.nvim_get_current_win()
   vim.api.nvim_cmd({ cmd = 'wincmd', args = { direction } }, {})
   local new_win = vim.api.nvim_get_current_win()
 
   -- If window didn't change, we're at the edge.
-  if new_win == cur_win and vim.env.WEZTERM_PANE then
+  if new_win == cur_win and vim.env.HERDR_PANE_ID and vim.env.HERDR_PANE_ID ~= '' then
+    local herdr = vim.env.HERDR_BIN_PATH
+    if herdr == nil or herdr == '' then herdr = 'herdr' end
+    vim.fn.system({ herdr, 'pane', 'focus', '--direction', cli_direction:lower(), '--current' })
+  elseif new_win == cur_win and vim.env.WEZTERM_PANE then
     vim.system({ 'wezterm', 'cli', 'activate-pane-direction', cli_direction }, { detach = true })
   end
 end
