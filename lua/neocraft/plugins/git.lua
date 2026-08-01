@@ -11,6 +11,7 @@ local pack = require('neocraft.core.pack')
 pack.add('git', {
   { src = 'https://github.com/nvim-lua/plenary.nvim' },
   { src = 'https://github.com/sindrets/diffview.nvim' },
+  { src = 'https://github.com/lewis6991/gitsigns.nvim' },
 })
 
 -- ┌───────────────────────────────────────────┐
@@ -47,6 +48,9 @@ end)
 
 -- Configure mini.git.
 Lib.later(function() require('mini.git').setup() end)
+
+-- Configure gitsigns as SonarLint's SCM backend; mini.diff owns visible diff signs.
+Lib.later(function() require('gitsigns').setup({ signcolumn = false }) end)
 
 -- Configure diffview.nvim.
 Lib.later(function()

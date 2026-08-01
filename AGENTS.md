@@ -64,7 +64,7 @@ Personal Neovim `0.12+` configuration focused on explicit structure, native APIs
 - `lua/neocraft/features/treesitter.lua`: tree-sitter textobject motions and selection growth/shrink helpers.
 - `lua/neocraft/features/terminal.lua`: reusable project-root floating terminal.
 - `lua/neocraft/features/git/*.lua`: Git workflow actions for status, diff, hunks, pending files, branches, rebase, reset, bisect, cherry-pick, and worktrees.
-- `lua/neocraft/features/lsp/*.lua`: shared LSP attach behavior plus Copilot, rename, annotations, TypeScript, and Python helpers.
+- `lua/neocraft/features/lsp/*.lua`: shared LSP attach behavior plus Copilot, rename, annotations, SonarLint, TypeScript, and Python helpers.
 - `lua/neocraft/lang/init.lua`: merges active language profiles and detects duplicate server/formatter declarations.
 - `lua/neocraft/lang/base.lua`: baseline authoring LSP servers, Mason tools, and formatter mappings.
 - `lua/neocraft/lang/typescript.lua`: TypeScript/JavaScript LSP, lint companion, tool, and formatter profile.
@@ -74,6 +74,7 @@ Personal Neovim `0.12+` configuration focused on explicit structure, native APIs
 - `lua/neocraft/plugins/ui.lua`: targeted non-mini UI/editor-polish plugins.
 - `lua/neocraft/plugins/treesitter.lua`: tree-sitter plugin registration and setup.
 - `lua/neocraft/plugins/lsp.lua`: shared LSP, Mason, and language-tooling entrypoint.
+- `lua/neocraft/plugins/sonarlint.lua`: SonarLint connections, project routes, analyzers, and filetypes.
 - `lua/neocraft/plugins/conform.lua`: `conform.nvim` formatting setup and project-aware formatter resolution.
 - `lua/neocraft/plugins/git.lua`: `mini.git` and `mini.diff` setup.
 - `lua/neocraft/theme/runtime.lua`: small runtime theme behavior such as mode-reactive UI highlights.

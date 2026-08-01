@@ -16,6 +16,10 @@
       "rev": "4516612fe98ff56ae0415a259ff6361a89419b0a",
       "src": "https://github.com/sindrets/diffview.nvim"
     },
+    "gitsigns.nvim": {
+      "rev": "31d6fb2d618bca1482b9f274751ead5f03461408",
+      "src": "https://github.com/lewis6991/gitsigns.nvim"
+    },
     "guess-indent.nvim": {
       "rev": "84a4987ff36798c2fc1169cbaff67960aed9776f",
       "src": "https://github.com/NMAC427/guess-indent.nvim"
@@ -69,6 +73,10 @@
     "render-markdown.nvim": {
       "rev": "0fd43fb4b1f073931c4b481f5f3b7cea3749e190",
       "src": "https://github.com/MeanderingProgrammer/render-markdown.nvim"
+    },
+    "sonarlint.nvim": {
+      "rev": "acd09b78969ddc965a7ddf59abb9d9eec5ecd94f",
+      "src": "https://gitlab.com/schrieveslaach/sonarlint.nvim"
     },
     "venv-selector.nvim": {
       "rev": "bcb2f58533c59b01565285eba49693f00bc460f5",

@@ -56,6 +56,33 @@ Run health checks from inside Neovim:
 
 Update plugin lock data through Neovim's `vim.pack` workflow and commit `nvim-pack-lock.json` when plugin revisions change.
 
+### SonarLint
+
+SonarLint connections, project routes, analyzers, and filetypes are declared together in
+`lua/neocraft/plugins/sonarlint.lua`. The integration is project-gated and uses connected quality profiles when
+credentials are available, falling back to local analysis otherwise. Use `:SonarLintInfo` to inspect the route selected
+for the current buffer; it does not trigger a project scan.
+
+Machine-specific Sonar configuration comes from environment variables. Personal SonarQube Cloud uses
+`SONAR_PERSONAL_URL`, `SONAR_PERSONAL_ORGANIZATION`, `SONAR_PERSONAL_REGION`, `SONAR_PERSONAL_REPOSITORY`, and paired
+`SONAR_PERSONAL_{FRONTEND,BACKEND}_{PATH,PROJECT_KEY,MODE}` variables. Self-hosted work projects use `SONAR_WORK_URL`,
+`SONAR_WORK_REPOSITORY`, and paired `SONAR_WORK_{FRONTEND,BACKEND}_{PATH,PROJECT_KEY,MODE}` variables. Empty or missing
+connections and routes are ignored.
+
+Tokens remain isolated in `SONAR_PERSONAL_TOKEN` and `SONAR_WORK_TOKEN`. Routes default to automatic mode; set their
+optional `*_MODE` variable to `local` to force local analysis even when the matching token is available.
+
+The text analyzer provides high-confidence exposed-secret detection across analyzed files; it is not a prose linter.
+Sonar does not currently provide a Lua analyzer, so Lua diagnostics remain owned by LuaLS and Luacheck.
+
+Sonar may overlap with ESLint, Biome, Oxlint, or Ruff on simpler code-smell rules. Keep Sonar enabled for connected
+quality-profile parity and security findings, and tune duplicate rules in the Sonar profile rather than hiding an entire
+diagnostic source.
+
+The custom client imports internal `sonarlint.nvim` modules (`sonarlint.utils`, `sonarlint.scm`,
+`sonarlint.autobinding`, `sonarlint.rules`, and `sonarlint.connected_mode`). These are not stable public APIs, so the
+integration relies on the revision pinned in `nvim-pack-lock.json`; verify it before updating that pin.
+
 ## Quality Checks
 
 Run the full repo verification suite:
@@ -79,7 +106,7 @@ The check script runs:
 - `lua/neocraft/plugins/`: plugin registration and plugin-family setup.
 - `lua/neocraft/features/`: editor workflows used by keymaps, autocmds, and plugin setup.
 - `lua/neocraft/features/git/`: Git actions for status, diffs, hunks, pending files, branches, rebase, reset, bisect, cherry-pick, and worktrees.
-- `lua/neocraft/features/lsp/`: shared LSP attach behavior plus Copilot, rename, annotation, TypeScript, and Python helpers.
+- `lua/neocraft/features/lsp/`: shared LSP attach behavior plus Copilot, rename, annotation, SonarLint, TypeScript, and Python helpers.
 - `lua/neocraft/lang/`: language profiles for LSP servers, Mason tools, and formatters.
 - `lua/neocraft/theme/gruvcraft/`: local palette and highlight layers.
 - `after/lsp/`: server-specific LSP overrides.

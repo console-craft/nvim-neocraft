@@ -55,7 +55,7 @@ This document should stay focused on the current architecture, the rules for fut
 - `lua/neocraft/features/treesitter.lua`: textobject movement and tree-sitter selection helpers.
 - `lua/neocraft/features/terminal.lua`: reusable project-root floating terminal.
 - `lua/neocraft/features/git/*.lua`: Git status, diff, hunks, pending files, branch cleanup, rebase, reset, bisect, cherry-pick, and centralized worktree workflows.
-- `lua/neocraft/features/lsp/*.lua`: LSP attach behavior, Copilot/NES, file rename notifications, annotations, TypeScript helpers, and Python helpers.
+- `lua/neocraft/features/lsp/*.lua`: LSP attach behavior, Copilot/NES, file rename notifications, annotations, SonarLint, TypeScript helpers, and Python helpers.
 - `lua/neocraft/lang/init.lua`: active language profile merge and duplicate declaration checks.
 - `lua/neocraft/lang/base.lua`: baseline authoring servers, tools, and formatter mappings.
 - `lua/neocraft/lang/typescript.lua`: TypeScript/JavaScript servers, lint companions, tools, and formatter mappings.
@@ -65,6 +65,7 @@ This document should stay focused on the current architecture, the rules for fut
 - `lua/neocraft/plugins/ui.lua`: targeted non-mini UI/editor-polish plugins.
 - `lua/neocraft/plugins/treesitter.lua`: tree-sitter plugin registration, parser list, attach behavior, context, textobjects, and autotag setup.
 - `lua/neocraft/plugins/lsp.lua`: Mason, LSP server enablement, shared capabilities, venv-selector, and LSP feature wiring.
+- `lua/neocraft/plugins/sonarlint.lua`: SonarLint connections, project routes, analyzers, and filetypes.
 - `lua/neocraft/plugins/conform.lua`: Conform registration, project-aware formatter roots, and format-on-save policy.
 - `lua/neocraft/plugins/git.lua`: `mini.git` and `mini.diff` setup.
 - `lua/neocraft/theme/gruvcraft/`: palette and highlight layers for syntax, editor UI, and plugins.

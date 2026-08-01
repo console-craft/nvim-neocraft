@@ -48,6 +48,7 @@ pack.add('lsp', {
   { src = 'https://github.com/neovim/nvim-lspconfig' },
   { src = 'https://github.com/b0o/SchemaStore.nvim' },
   { src = 'https://github.com/linux-cultist/venv-selector.nvim' },
+  { src = 'https://gitlab.com/schrieveslaach/sonarlint.nvim' },
 })
 
 -- ┌───────────────────────────────────────────┐

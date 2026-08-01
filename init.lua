@@ -46,6 +46,7 @@ require('neocraft.plugins.treesitter')
 require('neocraft.plugins.lsp')
 require('neocraft.plugins.conform')
 require('neocraft.plugins.git')
+require('neocraft.plugins.sonarlint')
 
 -- ┌───────────────────────────────────────────┐
 -- │ Features                                  │

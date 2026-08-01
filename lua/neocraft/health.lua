@@ -66,6 +66,31 @@ function M.check()
   end
   vim.health.info('For deeper runtime diagnostics, use :checkhealth vim.lsp and :checkhealth vim.treesitter.')
 
+  vim.health.start('SonarLint')
+  executable('java')
+  executable('sonarlint-language-server')
+
+  local mason_root = vim.env.MASON
+  if mason_root == nil or mason_root == '' then mason_root = vim.fs.joinpath(vim.fn.stdpath('data'), 'mason') end
+  local analyzer_dir = vim.fs.joinpath(mason_root, 'share', 'sonarlint-analyzers')
+
+  for _, analyzer in ipairs({
+    'sonarpython.jar',
+    'sonarjs.jar',
+    'sonarhtml.jar',
+    'sonariac.jar',
+    'sonartext.jar',
+  }) do
+    local path = vim.fs.joinpath(analyzer_dir, analyzer)
+    if file_exists(path) then
+      vim.health.ok("Found analyzer JAR: '" .. path .. "'")
+    else
+      vim.health.warn("Missing analyzer JAR: '" .. path .. "'")
+    end
+  end
+
+  vim.health.info('These tools are only required by the project-gated SonarLint integration.')
+
   vim.health.start('Repo files')
   config_file('nvim-pack-lock.json')
   config_file('scripts/checks.sh')

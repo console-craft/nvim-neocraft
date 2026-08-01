@@ -23,6 +23,7 @@ return {
     'oxfmt',
     'biome',
     'mdformat',
+    'sonarlint-language-server',
   },
   formatters_by_ft = {
     lua = { 'stylua' },
