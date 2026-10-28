@@ -34,6 +34,10 @@ opt.undofile                     = true                             -- Enable pe
 opt.undolevels                   = 10000                            -- Allows for a deep undo history.
 opt.updatetime                   = 250                              -- Decrease update time
 opt.timeoutlen                   = 500                              -- Decrease mapped sequence wait time
+-- Treat ESC immediately so WezTerm's Kitty key-release sequence cannot swallow rapid Caps-as-Esc taps.
+if vim.env.TERM_PROGRAM == 'WezTerm' then
+  opt.ttimeoutlen = 0
+end
 
 -- ┌───────────────────────────────────────────┐
 -- │ UI                                        │

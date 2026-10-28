@@ -56,6 +56,29 @@ Run health checks from inside Neovim:
 
 Update plugin lock data through Neovim's `vim.pack` workflow and commit `nvim-pack-lock.json` when plugin revisions change.
 
+### Mermaid previews
+
+In Normal mode, put the cursor inside a fenced `mermaid` block in a Markdown buffer:
+
+- `Enter` opens the rendered diagram in an opaque floating window.
+- `gf` opens it in a split to the right.
+- `gF` opens it in a horizontal split below the document.
+- `+` / `-` zoom in / out.
+- `h` / `j` / `k` / `l` pan left / down / up / right (6 columns horizontally, 4 rows vertically; counts work too).
+- `=` resets the zoom and pan to fit the whole diagram at the top-left.
+- `q` or `Esc` closes any preview.
+
+Images initially fit entirely inside the preview pane, preserving aspect ratio: tall diagrams fit by height, wide ones by width.
+Mermaid CLI renders at 4× pixel density for sharper text on high-resolution displays.
+Zoom ranges from ⅛× to 8× the automatic fit. Viewports are cropped before scaling, keeping zoomed images inside their pane.
+
+Previews use the current buffer contents, including unsaved edits. Press the key again to render edits; there is no live
+refresh. Outside Mermaid blocks, `Enter`, `gf`, and `gF` keep their native behavior. Insert-mode typing is unchanged.
+
+Requires `mmdc` (Mermaid CLI), its Puppeteer browser, ImageMagick (`magick`), the Markdown Tree-sitter parser, and a terminal
+supporting Kitty graphics. `image.nvim` uses its `magick_cli` processor; automatic document-image integrations are disabled.
+Rendering runs asynchronously, and temporary PNGs are removed when the preview closes.
+
 ### SonarLint
 
 SonarLint connections, project routes, analyzers, and filetypes are declared together in
@@ -97,6 +120,12 @@ The check script runs:
 - `luacheck` over the same Lua runtime paths
 - `lua-language-server --check`
 - A headless Neovim runtime diagnostics pass through `scripts/runtime_diagnostics.lua`
+
+Run the Mermaid regression checks separately (requires the Mermaid preview dependencies except terminal graphics):
+
+```shell
+NVIM_APPNAME=nvim-neocraft nvim --headless -u NONE -l scripts/mermaid_test.lua
+```
 
 ## Project Layout
 

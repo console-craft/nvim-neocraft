@@ -38,6 +38,7 @@ pack.add('ui', {
   { src = 'https://github.com/lukas-reineke/indent-blankline.nvim' },
   { src = 'https://github.com/lukas-reineke/virt-column.nvim' },
   { src = 'https://github.com/MeanderingProgrammer/render-markdown.nvim' },
+  { src = 'https://github.com/3rd/image.nvim' },
 })
 
 -- ┌───────────────────────────────────────────┐
@@ -88,6 +89,24 @@ Lib.later(function()
     exclude = {
       buftypes = excluded_buftypes,
       filetypes = excluded_ui_filetypes,
+    },
+  })
+end)
+
+-- ┌───────────────────────────────────────────┐
+-- │ Setup image                               │
+-- └───────────────────────────────────────────┘
+
+Lib.later(function()
+  if #vim.api.nvim_list_uis() == 0 then return end
+  require('image').setup({
+    processor = 'magick_cli',
+    integrations = {
+      markdown = { enabled = false },
+      asciidoc = { enabled = false },
+      typst = { enabled = false },
+      neorg = { enabled = false },
+      syslang = { enabled = false },
     },
   })
 end)

@@ -12,6 +12,10 @@
       "rev": "1b6d8273594643f51bb4c0c1d819bdb21b42159d",
       "src": "https://github.com/copilotlsp-nvim/copilot-lsp"
     },
+    "diagram.nvim": {
+      "rev": "54d71d6ae72afa236eedb2a918a35d7414ba39f6",
+      "src": "https://github.com/3rd/diagram.nvim"
+    },
     "diffview.nvim": {
       "rev": "4516612fe98ff56ae0415a259ff6361a89419b0a",
       "src": "https://github.com/sindrets/diffview.nvim"
@@ -23,6 +27,10 @@
     "guess-indent.nvim": {
       "rev": "84a4987ff36798c2fc1169cbaff67960aed9776f",
       "src": "https://github.com/NMAC427/guess-indent.nvim"
+    },
+    "image.nvim": {
+      "rev": "365e2ace0f619164ae6fd2f6f1d2807775dd6849",
+      "src": "https://github.com/3rd/image.nvim"
     },
     "indent-blankline.nvim": {
       "rev": "d28a3f70721c79e3c5f6693057ae929f3d9c0a03",

@@ -12,4 +12,14 @@ if vim.bo.buftype == '' then
   vim.opt_local.wrap            = true  -- Enable visual line wrapping by default
   vim.opt_local.linebreak       = true  -- Wrap at word boundaries when wrapping is enabled
   -- stylua: ignore end
+
+  local mermaid = require('neocraft.features.mermaid')
+  for key, layout in pairs({ ['<CR>'] = 'float', gf = 'split', gF = 'below' }) do
+    vim.keymap.set('n', key, function() return mermaid.preview(layout) and '' or key end, {
+      buffer = true,
+      expr = true,
+      silent = true,
+      desc = layout == 'below' and 'Preview Mermaid in a split below' or 'Preview Mermaid in a ' .. layout,
+    })
+  end
 end
